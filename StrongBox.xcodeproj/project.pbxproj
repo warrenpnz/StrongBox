@@ -43,7 +43,6 @@
 		4D92C7FD1F388DE500341A58 /* twofish.c in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C7FC1F388DE500341A58 /* twofish.c */; };
 		4D92C7FF1F388DFF00341A58 /* crypt_argchk.c in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C7FE1F388DFF00341A58 /* crypt_argchk.c */; };
 		4D93FD771EDB7A520076BBAA /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D93FD761EDB7A520076BBAA /* StoreKit.framework */; };
-		4DA595C51F445D8100351BEC /* PasswordSafe3Database.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DA595C41F445D8100351BEC /* PasswordSafe3Database.m */; };
 		4DB99DEA1F3A02020055657E /* Storyboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4DB99DE91F3A02020055657E /* Storyboard.storyboard */; };
 		4DBE5B391C8356C700C310BC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DBE5B381C8356C700C310BC /* AppDelegate.m */; };
 		4DC2D4141F39D8A90029DBFE /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4DC2D4131F39D8A90029DBFE /* Images.xcassets */; };
@@ -128,8 +127,6 @@
 		4D92C7FC1F388DE500341A58 /* twofish.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = twofish.c; path = PwSafeModel/twofish/twofish.c; sourceTree = "<group>"; };
 		4D92C7FE1F388DFF00341A58 /* crypt_argchk.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = crypt_argchk.c; path = PwSafeModel/twofish/crypt_argchk.c; sourceTree = "<group>"; };
 		4D93FD761EDB7A520076BBAA /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
-		4DA595C31F445D8100351BEC /* PasswordSafe3Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PasswordSafe3Database.h; path = macbox/MacBox/../../PwSafeModel/PasswordSafe3Database.h; sourceTree = SOURCE_ROOT; };
-		4DA595C41F445D8100351BEC /* PasswordSafe3Database.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PasswordSafe3Database.m; path = macbox/MacBox/../../PwSafeModel/PasswordSafe3Database.m; sourceTree = SOURCE_ROOT; };
 		4DB99DE91F3A02020055657E /* Storyboard.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Storyboard.storyboard; sourceTree = "<group>"; };
 		4DBE5B311C8356C700C310BC /* StrongBox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StrongBox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4DBE5B351C8356C700C310BC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -240,8 +237,6 @@
 				4D3694DD1F54547100A82811 /* Utils.m */,
 				4D68DBB11F430ECB00A8A148 /* PasswordDatabase.h */,
 				4D68DBB21F430ECB00A8A148 /* PasswordDatabase.m */,
-				4DA595C31F445D8100351BEC /* PasswordSafe3Database.h */,
-				4DA595C41F445D8100351BEC /* PasswordSafe3Database.m */,
 				4D92C7DD1F388D0900341A58 /* Field.h */,
 				4D92C7DE1F388D0900341A58 /* Field.m */,
 				4D92C7DF1F388D0900341A58 /* Group.h */,
@@ -520,7 +515,6 @@
 				4D915D771EDC06A0002615F6 /* PreviousPasswordsTableViewController.m in Sources */,
 				4D92C7F21F388D0900341A58 /* Group.m in Sources */,
 				4D0BA7DB1F23CA2A009243C9 /* PreferencesTableViewController.m in Sources */,
-				4DA595C51F445D8100351BEC /* PasswordSafe3Database.m in Sources */,
 				4D1757C41C8361D300E6356F /* LocalDeviceStorageProvider.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

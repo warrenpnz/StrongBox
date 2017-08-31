@@ -19,7 +19,6 @@
 		4D92C8191F388E6E00341A58 /* PasswordHistory.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C8081F388E6E00341A58 /* PasswordHistory.m */; };
 		4D92C81A1F388E6E00341A58 /* PasswordHistoryEntry.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C80A1F388E6E00341A58 /* PasswordHistoryEntry.m */; };
 		4D92C81C1F388E6E00341A58 /* Record.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C80E1F388E6E00341A58 /* Record.m */; };
-		4D92C81D1F388E6E00341A58 /* PasswordSafe3Database.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C8101F388E6E00341A58 /* PasswordSafe3Database.m */; };
 		4D92C81E1F388E6E00341A58 /* SafeItemViewModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C8121F388E6E00341A58 /* SafeItemViewModel.m */; };
 		4D92C81F1F388E6E00341A58 /* SafeTools.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D92C8141F388E6E00341A58 /* SafeTools.m */; };
 		4D92C8201F388E6E00341A58 /* twofish in Resources */ = {isa = PBXBuildFile; fileRef = 4D92C8151F388E6E00341A58 /* twofish */; };
@@ -75,8 +74,6 @@
 		4D92C80A1F388E6E00341A58 /* PasswordHistoryEntry.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PasswordHistoryEntry.m; path = ../../PwSafeModel/PasswordHistoryEntry.m; sourceTree = "<group>"; };
 		4D92C80D1F388E6E00341A58 /* Record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Record.h; path = ../../PwSafeModel/Record.h; sourceTree = "<group>"; };
 		4D92C80E1F388E6E00341A58 /* Record.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Record.m; path = ../../PwSafeModel/Record.m; sourceTree = "<group>"; };
-		4D92C80F1F388E6E00341A58 /* PasswordSafe3Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PasswordSafe3Database.h; path = ../../PwSafeModel/PasswordSafe3Database.h; sourceTree = "<group>"; };
-		4D92C8101F388E6E00341A58 /* PasswordSafe3Database.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PasswordSafe3Database.m; path = ../../PwSafeModel/PasswordSafe3Database.m; sourceTree = "<group>"; };
 		4D92C8111F388E6E00341A58 /* SafeItemViewModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SafeItemViewModel.h; path = ../../PwSafeModel/SafeItemViewModel.h; sourceTree = "<group>"; };
 		4D92C8121F388E6E00341A58 /* SafeItemViewModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SafeItemViewModel.m; path = ../../PwSafeModel/SafeItemViewModel.m; sourceTree = "<group>"; };
 		4D92C8131F388E6E00341A58 /* SafeTools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SafeTools.h; path = ../../PwSafeModel/SafeTools.h; sourceTree = "<group>"; };
@@ -154,8 +151,6 @@
 				4D92C80A1F388E6E00341A58 /* PasswordHistoryEntry.m */,
 				4D92C80D1F388E6E00341A58 /* Record.h */,
 				4D92C80E1F388E6E00341A58 /* Record.m */,
-				4D92C80F1F388E6E00341A58 /* PasswordSafe3Database.h */,
-				4D92C8101F388E6E00341A58 /* PasswordSafe3Database.m */,
 				4D92C8111F388E6E00341A58 /* SafeItemViewModel.h */,
 				4D92C8121F388E6E00341A58 /* SafeItemViewModel.m */,
 				4D92C8131F388E6E00341A58 /* SafeTools.h */,
@@ -376,7 +371,6 @@
 				4D4DFC0B1F3B135000BE1C2D /* ViewModel.m in Sources */,
 				4D60CC6E1F4C1627005B66B8 /* UpgradeWindowController.m in Sources */,
 				4DF59F5F1F30DB7A00D68BFE /* Document.m in Sources */,
-				4D92C81D1F388E6E00341A58 /* PasswordSafe3Database.m in Sources */,
 				4D92C8181F388E6E00341A58 /* Group.m in Sources */,
 				4D92C81C1F388E6E00341A58 /* Record.m in Sources */,
 				4D92C81F1F388E6E00341A58 /* SafeTools.m in Sources */,

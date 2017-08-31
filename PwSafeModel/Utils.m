@@ -46,4 +46,21 @@
     return fn;
 }
 
+
++ (NSString *)hostname {
+    char baseHostName[256];
+    int success = gethostname(baseHostName, 255);
+    
+    if (success != 0) return nil;
+    
+    baseHostName[255] = '\0';
+    
+#if !TARGET_IPHONE_SIMULATOR
+    return [NSString stringWithFormat:@"%s.local", baseHostName];
+    
+#else
+    return [NSString stringWithFormat:@"%s", baseHostName];    
+#endif
+}
+
 @end

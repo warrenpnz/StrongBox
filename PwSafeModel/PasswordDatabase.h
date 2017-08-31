@@ -57,7 +57,8 @@
 
 // Master Password
 
-@property (nonatomic) NSString *masterPassword;
+@property (nonatomic, retain) NSString *masterPassword;
+
 @property (nonatomic, readonly) NSDate *lastUpdateTime;
 @property (nonatomic, readonly) NSString *lastUpdateUser;
 @property (nonatomic, readonly) NSString *lastUpdateHost;

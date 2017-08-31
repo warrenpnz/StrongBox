@@ -14,5 +14,6 @@
 + (NSString *)getAppName;
 + (NSString *)getAppVersion;
 + (NSString *)insertTimestampInFilename:(NSString *)title;
++ (NSString *)hostname;
 
 @end
