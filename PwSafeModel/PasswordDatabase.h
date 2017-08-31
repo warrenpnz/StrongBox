@@ -58,7 +58,6 @@
 // Master Password
 
 @property (nonatomic, retain) NSString *masterPassword;
-
 @property (nonatomic, readonly) NSDate *lastUpdateTime;
 @property (nonatomic, readonly) NSString *lastUpdateUser;
 @property (nonatomic, readonly) NSString *lastUpdateHost;
@@ -79,8 +78,8 @@
 
 // Handy for PasteboardWriter for Drag and Drop
 
-- (NSString*)getSerializationIdForItem:(SafeItemViewModel*)item;
 - (SafeItemViewModel*)getItemFromSerializationId:(NSString*)serializationId;
+- (NSString*)getSerializationIdForItem:(SafeItemViewModel*)item;
 
 @end
 
