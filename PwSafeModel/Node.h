@@ -40,6 +40,8 @@
 
 - (Node*_Nullable)getChildGroupWithTitle:(NSString*_Nonnull)title;
 
+- (NSArray<Node*>*_Nonnull)filterChildRecords:(BOOL)recursive predicate:(BOOL (^_Nullable)(Node* _Nonnull node))predicate;
+
 // Required for any fields we ignore/are not aware of so that we don't overwrite them on save, we carry them here
 @property (nonatomic, strong, readonly, nullable) Record *originalLinkedRecord;
 

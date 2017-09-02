@@ -19,7 +19,6 @@
 @interface PasswordDatabase ()
 
 @property (nonatomic, strong) NSMutableArray<Field*> *dbHeaderFields;
-//@property (nonatomic, strong) NSMutableArray<Record*> *records;
 
 @end
 
@@ -36,7 +35,6 @@
 - (instancetype)initNewWithPassword:(NSString *)password {
     if (self = [super init]) {
         _dbHeaderFields = [[NSMutableArray alloc] init];
-        //_records = [[NSMutableArray alloc] init];
 
         [self setLastUpdateTime];
         [self setLastUpdateUser];
@@ -92,8 +90,6 @@
             
             return nil;
         }
-        
-        //[SafeTools dumpDbHeaderAndRecords:headerFields records:records];
         
         return self;
     }
@@ -164,7 +160,10 @@
         
         if(!foo) {
             foo = [[Node alloc] initAsGroup:component parent:node];
-            [node addChild:foo];
+            if(![node addChild:foo]) {
+                NSLog(@"Problem adding child group [%@] to node [%@]", component, node.title);
+                return nil;
+            }
         }
         
         node = foo;
@@ -222,379 +221,63 @@
         return nil;
     }
     
+    //[SafeTools dumpDbHeaderAndRecords:headerFields records:records];
+
     return records;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (SafeItemViewModel*)addRecord:(NSString*)title
-                          group:(Group*)group
-                       username:(NSString*)username
-                            url:(NSString*)url
-                       password:(NSString*)password
-                          notes:(NSString*)notes {
-    Record* record = [[Record alloc] init];
-    
-    record.title = title;
-    record.username = username;
-    record.password = password;
-    record.url = url;
-    record.notes = notes;
-    record.group = group;
-    
-    return [self addRecord:record];
-}
-
-- (SafeItemViewModel*)addRecord:(Record *)newRecord {
-    [self.records addObject:newRecord];
-    
-    // Remove any Empty Group field if it exists for this record's group
-    
-    NSMutableArray *fieldsToDelete = [[NSMutableArray alloc] init];
-    for (Field *field in _dbHeaderFields) {
-        if (field.dbHeaderFieldType == HDR_EMPTYGROUP) {
-            Group *group = [[Group alloc] initWithEscapedPathString:field.dataAsString];
-            
-            if ([group isEqual:newRecord.group]) {
-                [fieldsToDelete addObject:field];
-            }
-        }
-    }
-    
-    [_dbHeaderFields removeObjectsInArray:fieldsToDelete];
-    
-    [self invalidateCaches];
-    
-    return [[SafeItemViewModel alloc] initWithRecord:newRecord];
-}
-
-- (SafeItemViewModel *)createGroupWithTitle:(Group *)parentGroup
-                                      title:(NSString *)title
-                               validateOnly:(BOOL)validateOnly {
-    if (!title || title.length < 1) {
-        return nil;
-    }
-    
-    if (!parentGroup) {
-        parentGroup = [[Group alloc] initAsRootGroup];
-    }
-    
-    Group *retGroup = [parentGroup createChildGroupWithTitle:title];
-    
-    if([[self allGroups] containsObject:retGroup]) {
-        //NSLog(@"This group already exists... not re-creating.");
-        return nil;
-    }
-    
-    if (!validateOnly) {
-        Field *emptyGroupField = [[Field alloc] initNewDbHeaderField:HDR_EMPTYGROUP
-                                                          withString:retGroup.escapedPathString];
-        [_dbHeaderFields addObject:emptyGroupField];
-        
-        [self invalidateCaches];
-    }
-    
-    if (retGroup != nil) {
-        return [[SafeItemViewModel alloc] initWithGroup:retGroup];
-    }
-
-    return nil;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (NSArray *)getSearchableItems {
-    NSArray *records = [self getAllRecords];
-    NSArray *allDisplayableGroups = [self getAllDisplayableGroups:nil];
-
-    NSMutableArray *items = [[NSMutableArray alloc] initWithCapacity:records.count + allDisplayableGroups.count];
-
-    for (Group *group in allDisplayableGroups) {
-        //NSLog(@"Adding %@ in %@", group.suffixDisplayString, group.pathPrefixDisplayString);
-
-        [items addObject:[[SafeItemViewModel alloc] initWithGroup:group]];
-    }
-
-    for (Record *record in records) {
-        [items addObject:[[SafeItemViewModel alloc] initWithRecord:record]];
-    }
-
-    return items;
-}
-
-- (NSArray *)getAllDisplayableGroups:(Group *)root {
-    NSMutableArray *allDisplayableGroups = [[NSMutableArray alloc] init];
-
-    //NSLog(@"Getting subgroups for [%@]", root.escapedPathString);
-    NSArray *groupsForThisLevel = [self getImmediateSubgroupsForParent:root withFilter:nil deepSearch:NO];
-
-    [allDisplayableGroups addObjectsFromArray:groupsForThisLevel];
-
-    for (Group *group in groupsForThisLevel) {
-        //NSLog(@"Recursing into [%@]", group.escapedPathString);
-        [allDisplayableGroups addObjectsFromArray:[self getAllDisplayableGroups:group]];
-    }
-
-    return allDisplayableGroups;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Regular Displayable Items
-
-- (NSArray<SafeItemViewModel*> *)getImmediateSubgroupsForParent:(Group *)group {
-    NSMutableArray *items = [[NSMutableArray alloc] init];
-
-    NSMutableArray *subgroupsForCurrentGroup = [[NSMutableArray alloc] initWithArray:
-                                                [self getImmediateSubgroupsForParent:group
-                                                                     withFilter:nil
-                                                                     deepSearch:NO]];
-
-    [subgroupsForCurrentGroup sortUsingComparator:^(id obj1, id obj2) {
-                                  NSString *s1 = ((SafeItemViewModel *)obj1).title;
-                                  NSString *s2 = ((SafeItemViewModel *)obj2).title;
-                                  return [s1 compare:s2];
-                              }];
-
-    for (Group *grp in subgroupsForCurrentGroup) {
-        [items addObject:[[SafeItemViewModel alloc] initWithGroup:grp]];
-    }
-
-    return items;
-}
-
-- (NSArray<SafeItemViewModel*> *)getItemsForGroup:(Group *)group {
-    return [self getItemsForGroup:group withFilter:[[NSString alloc] init] deepSearch:NO];
-}
-
-- (NSArray<SafeItemViewModel*>  *)getItemsForGroup:(Group *)group
-                   withFilter:(NSString *)filter {
-    return [self getItemsForGroup:group withFilter:filter deepSearch:NO];
-}
-
-- (NSArray<SafeItemViewModel*>  *)getItemsForGroup:(Group *)group
-                   withFilter:(NSString *)filter
-                   deepSearch:(BOOL)deepSearch {
-    NSMutableArray *items = [[NSMutableArray alloc] init];
-
-    NSMutableArray *subgroupsForCurrentGroup = [[NSMutableArray alloc] initWithArray:
-                                                [self getImmediateSubgroupsForParent:group
-                                                                     withFilter:filter
-                                                                     deepSearch:deepSearch]];
-
-    [subgroupsForCurrentGroup sortUsingComparator:^(id obj1, id obj2) {
-                                  NSString *s1 = ((SafeItemViewModel *)obj1).title;
-                                  NSString *s2 = ((SafeItemViewModel *)obj2).title;
-                                  return [s1 compare:s2];
-                              }];
-
-    NSMutableArray *recordsForCurrentGroup = [[NSMutableArray alloc] initWithArray:[self getRecordsForGroup:group withFilter:filter deepSearch:deepSearch]];
-
-    [recordsForCurrentGroup sortUsingComparator:^(id obj1, id obj2) {
-                                NSString *s1 = ((SafeItemViewModel *)obj1).title;
-                                NSString *s2 = ((SafeItemViewModel *)obj2).title;
-                                return [s1 compare:s2];
-                            }];
-
-    for (Group *grp in subgroupsForCurrentGroup) {
-        [items addObject:[[SafeItemViewModel alloc] initWithGroup:grp]];
-    }
-
-    for (Record *record in recordsForCurrentGroup) {
-        [items addObject:[[SafeItemViewModel alloc] initWithRecord:record]];
-    }
-
-    return items;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (BOOL)validateMoveItems:(NSArray<SafeItemViewModel*> *)items destination:(Group *)group {
-    return [self validateMoveItems:items destination:group checkIfMoveIntoSubgroupOfDestinationOk:NO];
-}
-
-- (BOOL)validateMoveItems:(NSArray<SafeItemViewModel*> *)items destination:(Group *)group checkIfMoveIntoSubgroupOfDestinationOk:(BOOL)checkIfMoveIntoSubgroupOfDestinationOk {
-    BOOL directMove = [self moveOrValidateItems:items destination:group validateOnly:YES];
-
-    if (!directMove && checkIfMoveIntoSubgroupOfDestinationOk) {
-        NSArray *subGroups = [self getImmediateSubgroupsForParent:group withFilter:nil deepSearch:NO];
-
-        for (Group *subgroup in subGroups) {
-            if ([self moveOrValidateItems:items destination:subgroup validateOnly:YES]) {
-                return YES;
-            }
-        }
-    }
-
-    return directMove;
-}
-
-- (void)moveItems:(NSArray<SafeItemViewModel*> *)items destination:(Group *)group {
-    [self moveOrValidateItems:items destination:group validateOnly:NO];
-}
-
-- (BOOL)moveOrValidateItems:(NSArray<SafeItemViewModel*> *)items destination:(Group *)destination validateOnly:(BOOL)validateOnly {
-    for (SafeItemViewModel *item in items) {
-        if (item.isGroup) {
-            if (![self moveGroup:item.group destination:destination validateOnly:validateOnly]) {
-                return NO;
-            }
-        }
-        else {
-            if (![self moveRecord:item.record destination:destination validateOnly:validateOnly]) {
-                return NO;
-            }
-        }
-    }
-
-    return YES;
-}
-
-- (SafeItemViewModel *)setItemTitle:(SafeItemViewModel *)item title:(NSString *)title {
-    if(item == nil) {
-        NSLog(@"WARN: nil sent to setItemTitle!"); // TODO: Raise?
-        return nil;
-    }
-    
-    if (item.isGroup) {
-        Group *parentGroup = [item.group getParentGroup];
-        
-        SafeItemViewModel *newGroup = [self createGroupWithTitle:parentGroup title:title validateOnly:YES];
-        
-        if (newGroup != nil) {
-            NSArray *childItems = [self getItemsForGroup:item.group];
-
-            if ([self moveOrValidateItems:childItems destination:newGroup.group validateOnly:YES]) {
-                //We could be renaming an empty group so create the empty group now in case it's not created by the move operation.
-                
-                SafeItemViewModel *newGroup = [self createGroupWithTitle:parentGroup title:title validateOnly:NO];
-
-                if (![self moveOrValidateItems:childItems destination:newGroup.group validateOnly:NO]) {
-                    NSLog(@"Could move child items into new destination group %@", newGroup.group.escapedPathString);
-
-                    return nil;
-                }
-
-                // delete the old
-
-                [self deleteGroup:item.group];
-
-                return newGroup;
-            }
-            else {
-                NSLog(@"Could move child items into new destination group %@", newGroup.group.escapedPathString);
-                return nil;
-            }
-        }
-        else {
-            NSLog(@"Could not create destination group %@", newGroup.group.escapedPathString);
-            return nil;
-        }
-    }
-    else {
-        item.record.title = title;
-        return item;
-    }
-}
-
-- (void)setItemUsername:(SafeItemViewModel *)item username:(NSString*)username {
-    if(item.isGroup) {
-        [NSException raise:@"Attempt to alter group like an record invalidly." format:@"Attempt to alter group like an record invalidly"];
-    }
-    
-    item.record.username = username;
-}
-
-- (void)setItemUrl:(SafeItemViewModel *)item url:(NSString*)url {
-    if(item.isGroup) {
-        [NSException raise:@"Attempt to alter group like an record invalidly." format:@"Attempt to alter group like an record invalidly"];
-    }
-
-    item.record.url = url;
-}
-
-- (void)setItemPassword:(SafeItemViewModel *)item password:(NSString*)password {
-    if(item.isGroup) {
-        [NSException raise:@"Attempt to alter group like an record invalidly." format:@"Attempt to alter group like an record invalidly"];
-    }
-    
-    item.record.password = password;
-}
-
-- (void)setItemNotes:(SafeItemViewModel *)item notes:(NSString*)notes {
-    if(item.isGroup) {
-        [NSException raise:@"Attempt to alter group like an record invalidly." format:@"Attempt to alter group like an record invalidly"];
-    }
-  
-    item.record.notes = notes;
-}
-
-- (void)deleteItems:(NSArray<SafeItemViewModel *> *)items {
-    for (SafeItemViewModel *item in items) {
-        [self deleteItem:item];
-    }
-}
-
-- (void)deleteItem:(SafeItemViewModel *)item {
-    if (item.isGroup) {
-        [self deleteGroup:item.group];
-    }
-    else {
-        [self deleteRecord:item.record];
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////
-// Auto complete helper
+// Convenience
 
-- (NSSet *)getAllExistingUserNames {
-    NSMutableSet *bag = [[NSMutableSet alloc]init];
+- (NSArray<Node*>*)getAllRecords {
+    return [self.rootGroup filterChildRecords:YES predicate:^BOOL(Node * _Nonnull node) {
+        return !node.isGroup;
+    }];
+}
 
-    for (Record *record in [self getAllRecords]) {
-        [bag addObject:record.username];
+- (NSSet<NSString*> *)getUsernamesSet {
+    NSMutableSet<NSString*> *bag = [[NSMutableSet alloc]init];
+
+    for (Node *recordNode in [self getAllRecords]) {
+        [bag addObject:recordNode.fields.username];
     }
 
     return bag;
 }
 
-- (NSSet *)getAllExistingPasswords {
-    NSMutableSet *bag = [[NSMutableSet alloc]init];
+- (NSSet<NSString*> *)getAllExistingPasswords {
+    NSMutableSet<NSString*> *bag = [[NSMutableSet alloc]init];
 
-    for (Record *record in [self getAllRecords]) {
-        [bag addObject:record.password];
+    for (Node *record in [self getAllRecords]) {
+        [bag addObject:record.fields.password];
     }
 
     return bag;
 }
 
 - (NSString *)getMostPopularUsername {
-    NSCountedSet *bag = [[NSCountedSet alloc]init];
+    NSCountedSet<NSString*> *bag = [[NSCountedSet alloc]init];
 
-    for (Record *record in [self getAllRecords]) {
-        if(record.username.length) {
-            [bag addObject:record.username];
+    for (Node *record in [self getAllRecords]) {
+        if(record.fields.username.length) {
+            [bag addObject:record.fields.username];
         }
     }
     
-    NSString *mostOccurring = @"";
-    NSUInteger highest = 0;
-
-    for (NSString *s in bag) {
-        if ([bag countForObject:s] > highest) {
-            highest = [bag countForObject:s];
-            mostOccurring = s;
-        }
-    }
-
-    return mostOccurring;
+    return [self mostFrequentInCountedSet:bag];
 }
 
 - (NSString *)getMostPopularPassword {
-    NSCountedSet *bag = [[NSCountedSet alloc]init];
+    NSCountedSet<NSString*> *bag = [[NSCountedSet alloc]init];
 
-    for (Record *record in [self getAllRecords]) {
-        [bag addObject:record.password];
+    for (Node *record in [self getAllRecords]) {
+        [bag addObject:record.fields.password];
     }
 
+    return [self mostFrequentInCountedSet:bag];
+}
+
+- (NSString*)mostFrequentInCountedSet:(NSCountedSet<NSString*>*)bag {
     NSString *mostOccurring = @"";
     NSUInteger highest = 0;
 
@@ -606,19 +289,6 @@
     }
 
     return mostOccurring;
-}
-
-- (NSString *)generatePassword {
-    NSString *letters = @"!@#$%*[];?()abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    NSUInteger len = 16;
-    NSMutableString *randomString = [NSMutableString stringWithCapacity:len];
-
-    for (int i = 0; i < len; i++) {
-        [randomString appendFormat:@"%C", [letters characterAtIndex:arc4random_uniform((u_int32_t)letters.length)]];
-    }
-
-    return randomString;
 }
 
 - (NSData *)getAsData:(NSError**)error {
@@ -768,44 +438,6 @@ TODO: Move to serialization - defaults if not exist
     return ret;
 }
 
-- (NSString*)getSerializationIdForItem:(SafeItemViewModel*)item {
-    if(item == nil) {
-        return nil;
-    }
-    
-    if(item.isGroup) {
-        return [NSString stringWithFormat:@"G%@", item.group.escapedPathString];
-    }
-    else {
-        return [NSString stringWithFormat:@"R%@", item.record.uuid];
-    }
-}
-
-- (SafeItemViewModel*)getItemFromSerializationId:(NSString*)serializationId {
-    if(serializationId == nil || serializationId.length < 1) {
-        return nil;
-    }
-    
-    NSString *groupOrRecord = [serializationId substringToIndex:1];
-    NSString *identifier = [serializationId substringFromIndex:1];
-
-    if([groupOrRecord isEqualToString:@"R"]) {
-        Record* record = [self getRecordByUuid:identifier];
-        
-        if(record) {
-            return [[SafeItemViewModel alloc] initWithRecord:record];
-        }
-    }
-    else if([groupOrRecord isEqualToString:@"G"]) {
-        Group* group = [self getGroupByEscapedPathString:identifier];
-        
-        if(group) {
-            return [[SafeItemViewModel alloc] initWithGroup:group];
-        }
-    }
-    
-    return nil;
-}
 
 - (NSDate *)lastUpdateTime {
     NSDate *ret = nil;
@@ -939,259 +571,6 @@ TODO: Move to serialization - defaults if not exist
         Field *lastUpdateTime = [[Field alloc] initNewDbHeaderField:HDR_LASTUPDATETIME withData:dataTime];
         [_dbHeaderFields addObject:lastUpdateTime];
     }
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (void)invalidateCaches {
-    self.allGroupsCache = nil;
-}
-
-- (NSArray<Group*>*)allGroups {
-    if(self.allGroupsCache == nil) {
-        NSArray<Group*> *empty = [self emptyGroups];
-        
-        NSMutableSet<Group*> *groups = [[NSMutableSet<Group*> alloc] init];
-        [groups addObjectsFromArray:empty];
-        
-        for (Record *r in _records) {
-            [groups addObject:r.group];
-        }
-        
-        self.allGroupsCache = groups.allObjects;
-    }
-    
-    return self.allGroupsCache;
-}
-
-- (NSArray<Record*> *)getAllRecords {
-    return [NSArray arrayWithArray:_records];
-}
-
-- (NSArray<Group*> *)getImmediateSubgroupsForParent:(Group *)parent
-                                         withFilter:(NSString *)filter
-                                         deepSearch:(BOOL)deepSearch {
-    NSMutableSet<Group*> *ret = [[NSMutableSet alloc] init];
-    
-    for (Group *group in  [self getAllSubgroupsWithParent:parent]) {
-        if (filter.length) {
-            if([self getRecordsForGroup:group withFilter:filter deepSearch:deepSearch].count) {
-                Group *immediateSubGroup = [group getDirectAncestorOfParent:parent];
-                [ret addObject:immediateSubGroup];
-                break;
-            }
-        }
-        else {
-            Group *immediateSubGroup = [group getDirectAncestorOfParent:parent];
-            [ret addObject:immediateSubGroup];
-        }
-    }
-    
-    return ret.allObjects;
-}
-
-- (NSArray<Record*> *)getRecordsForGroup:(Group *)parent
-                              withFilter:(NSString *)filter
-                              deepSearch:(BOOL)deepSearch {
-    if (!parent) {
-        parent = [[Group alloc] initAsRootGroup];
-    }
-    
-    NSMutableArray<Record*> *ret = [[NSMutableArray alloc] init];
-    
-    for (Record *record in _records) {
-        if ([self recordMatchesFilter:record filter:filter deepSearch:deepSearch] && [record.group isEqual:parent]) {
-            [ret addObject:record];
-        }
-    }
-    
-    return ret;
-}
-
-- (BOOL)moveGroup:(Group *)src destination:(Group *)destination validateOnly:(BOOL)validateOnly {
-    if (src == nil || src.isRootGroup) {
-        return NO;
-    }
-    
-    if (destination == nil) {
-        destination = [[Group alloc] initAsRootGroup];
-    }
-    
-    if (![src.parentGroup isEqual:destination] && ![src isEqual:destination] && ![destination isSubgroupOf:src]) {
-        SafeItemViewModel *movedGroup = [self createGroupWithTitle:destination title:src.title validateOnly:validateOnly];
-        
-        if (movedGroup == nil) {
-            NSLog(@"Group already exists at destination. Will not overwrite.");
-            return NO;
-        }
-        
-        // Direct records
-        
-        NSArray *records = [self getRecordsForGroup:src withFilter:nil deepSearch:NO];
-        
-        for (Record *record in records) {
-            if (![self moveRecord:record destination:movedGroup.group validateOnly:validateOnly]) {
-                return NO;
-            }
-        }
-        
-        // Direct subgroubs
-        
-        NSArray *subgroups = [self getImmediateSubgroupsForParent:src withFilter:nil deepSearch:NO];
-        
-        for (Group *subgroup in subgroups) {
-            if (![self moveGroup:subgroup destination:movedGroup.group validateOnly:validateOnly]) {
-                return NO;
-            }
-        }
-        
-        // Delete the src
-        
-        if (!validateOnly) {
-            [self deleteGroup:src];
-            [self invalidateCaches];
-        }
-        
-        return YES;
-    }
-    
-    return NO;
-}
-
-- (BOOL)moveRecord:(Record *)src destination:(Group *)destination validateOnly:(BOOL)validateOnly {
-    if (destination == nil) {
-        destination = [[Group alloc] initAsRootGroup];
-    }
-    
-    if ([src.group isEqual:destination]) {
-        return NO;
-    }
-    
-    if (!validateOnly) {
-        src.group = destination;
-        [self invalidateCaches];
-    }
-    
-    return YES;
-}
-
-- (void)deleteGroup:(Group *)group {
-    // We need to find all this empty group + empty groups that are a subgroup of this and delete them
-    
-    NSMutableArray *fieldsToBeDeleted = [[NSMutableArray alloc] init];
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.dbHeaderFieldType == HDR_EMPTYGROUP) {
-            NSString *groupName = field.dataAsString;
-            Group *g = [[Group alloc] initWithEscapedPathString:groupName];
-            
-            if ([g isEqual:group] || [g isSubgroupOf:group]) {
-                [fieldsToBeDeleted addObject:field];
-            }
-        }
-    }
-    
-    [_dbHeaderFields removeObjectsInArray:fieldsToBeDeleted];
-    
-    // We need to find all records that are part of this group and delete them!
-    
-    NSMutableArray *recordsToBeDeleted = [[NSMutableArray alloc] init];
-    
-    for (Record *record in _records) {
-        if ([record.group isEqual:group] || [record.group isSubgroupOf:group]) {
-            [recordsToBeDeleted addObject:record];
-        }
-    }
-    
-    [_records removeObjectsInArray:recordsToBeDeleted];
-    
-    [self invalidateCaches];
-}
-
-- (void)deleteRecord:(Record *)record {
-    [_records removeObject:record];
-    
-    // We'd like to keep the empty group around for convenience/display purposes -
-    // until user explicitly deletes so we'll put it
-    // in the empty groups list in the DB header if it's not there
-    
-    if (![self groupContainsAnything:record.group] &&
-        ![[self emptyGroups] containsObject:record.group]) {
-        Field *emptyGroupField = [[Field alloc] initNewDbHeaderField:HDR_EMPTYGROUP withString:record.group.escapedPathString];
-        [_dbHeaderFields addObject:emptyGroupField];
-    }
-    
-    [self invalidateCaches];
-}
-
-- (Record*)getRecordByUuid:(NSString*)uuid {
-    NSArray<Record*>* filtered = [_records filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
-        return [((Record*)evaluatedObject).uuid isEqualToString:uuid];
-    }]];
-    
-    return [filtered firstObject];
-}
-
-- (Group*)getGroupByEscapedPathString:(NSString*)escapedPathString {
-    if(escapedPathString == nil || escapedPathString.length == 0) {
-        return [[Group alloc] initAsRootGroup];
-    }
-    
-    NSArray<Group*> *allGroups = [self allGroups];
-    
-    NSArray<Group*> *filtered = [allGroups filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
-        Group* group = (Group*)(evaluatedObject);
-        return [group.escapedPathString isEqualToString:escapedPathString]; // TODO: Case Sensitive?
-    }]];
-    
-    return [filtered firstObject];
-}
-
-- (NSArray<Group *>*)emptyGroups {
-    NSMutableSet<Group*> *groups = [[NSMutableSet<Group*> alloc] init];
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.dbHeaderFieldType == HDR_EMPTYGROUP) {
-            NSString *groupName = field.dataAsString;
-            [groups addObject:[[Group alloc] initWithEscapedPathString:groupName]];
-        }
-    }
-    
-    return groups.allObjects;
-}
-
-- (NSArray<Group*> *)getAllSubgroupsWithParent:(Group*)parent {
-    return [[self allGroups] filteredArrayUsingPredicate:
-            [NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
-        return [((Group*)evaluatedObject) isSubgroupOf:parent];
-    }]];
-}
-
-- (BOOL)recordMatchesFilter:(Record *)record
-                     filter:(NSString *)filter
-                 deepSearch:(BOOL)deepSearch {
-    if (!deepSearch) {
-        return filter.length == 0 || ([record.title rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound);
-    }
-    else {
-        return (filter.length == 0 ||
-                ([record.title rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound) ||
-                ([record.username rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound) ||
-                ([record.password rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound) ||
-                ([record.url rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound) ||
-                ([record.notes rangeOfString:filter options:NSCaseInsensitiveSearch].location != NSNotFound));
-    }
-}
-
-- (BOOL)groupContainsAnything:(Group*)group {
-    for (Record *r in _records) {
-        if ([r.group isEqual:group] || [r.group isSubgroupOf:group]) {
-            return NO;
-            break;
-        }
-    }
-    
-    return [self getAllSubgroupsWithParent:group].count > 0;
 }
 
 @end

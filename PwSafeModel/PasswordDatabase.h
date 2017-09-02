@@ -10,7 +10,6 @@
 #define _PasswordDatabase_h
 
 #import <Foundation/Foundation.h>
-#import "SafeItemViewModel.h"
 #import "Node.h"
 
 @interface PasswordDatabase : NSObject

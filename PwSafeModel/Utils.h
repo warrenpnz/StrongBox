@@ -15,5 +15,6 @@
 + (NSString *)getAppVersion;
 + (NSString *)insertTimestampInFilename:(NSString *)title;
 + (NSString *)hostname;
++ (NSString *)generatePassword;
 
 @end

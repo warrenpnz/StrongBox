@@ -158,6 +158,35 @@
     return nil;
 }
 
+- (NSArray<Node*>*_Nonnull)filterChildRecords:(BOOL)recursive predicate:(BOOL (^_Nullable)(Node* _Nonnull node))predicate {
+    NSMutableArray<Node*> *ret = [NSMutableArray array];
+    
+    NSArray<Node*>* matching;
+    if(predicate) {
+        matching = [self.children filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
+            Node* child = (Node*)evaluatedObject;
+            return predicate(child);
+        }]];
+    }
+    else {
+        matching = self.children;
+    }
+    
+    [ret addObjectsFromArray:matching];
+    
+    if(recursive) {
+        for(Node* child in self.children) {
+            if(child.isGroup) {
+                NSArray<Node*> *bar = [child filterChildRecords:recursive predicate:predicate];
+                
+                [ret addObjectsFromArray:bar];
+            }
+        }
+    }
+    
+    return ret;
+}
+
 + (NSString*)generateUniqueId {
     NSUUID *unique = [[NSUUID alloc] init];
     
