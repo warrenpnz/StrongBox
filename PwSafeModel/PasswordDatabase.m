@@ -20,7 +20,6 @@
 
 @property (nonatomic, strong) NSMutableArray<Field*> *dbHeaderFields;
 @property (nonatomic, strong) NSMutableArray<Record*> *records;
-@property (nonatomic) NSInteger keyStretchIterations;
 @property (nonatomic, strong) NSArray<Group*> *allGroupsCache;  // PERF/MEM
 
 @end

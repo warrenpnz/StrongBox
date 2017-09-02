@@ -11,6 +11,7 @@
 
 #import <Foundation/Foundation.h>
 #import "SafeItemViewModel.h"
+#import "Node.h"
 
 @interface PasswordDatabase : NSObject
 
@@ -21,14 +22,10 @@
 - (instancetype)initNewWithPassword:(NSString *)password;
 - (instancetype)initExistingWithDataAndPassword:(NSData *)data password:(NSString *)password error:(NSError **)ppError;
 
-
-- (Node*)root;
-
 - (NSData*)getAsData:(NSError**)error;
 
-//
-Box this up
-Key Stretch Iterations also! ToDO
+@property (nonatomic, readonly) Node* rootGroup;
+@property (nonatomic) NSInteger keyStretchIteratios;
 @property (nonatomic, retain) NSString *masterPassword;
 @property (nonatomic, readonly) NSDate *lastUpdateTime;
 @property (nonatomic, readonly) NSString *lastUpdateUser;

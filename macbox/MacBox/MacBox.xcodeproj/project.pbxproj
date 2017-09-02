@@ -145,8 +145,13 @@
 		4D92C8001F388E5D00341A58 /* PwSafeModel */ = {
 			isa = PBXGroup;
 			children = (
+				4D92C8151F388E6E00341A58 /* twofish */,
 				4D92C8011F388E6E00341A58 /* PasswordDatabase.h */,
 				4D92C8021F388E6E00341A58 /* PasswordDatabase.m */,
+				4DE419B91F588B2F00158ED5 /* Node.h */,
+				4DE419BA1F588B2F00158ED5 /* Node.m */,
+				4DE419BC1F588C4800158ED5 /* NodeFields.h */,
+				4DE419BD1F588C4800158ED5 /* NodeFields.m */,
 				4D92C8031F388E6E00341A58 /* Field.h */,
 				4D92C8041F388E6E00341A58 /* Field.m */,
 				4D92C8051F388E6E00341A58 /* Group.h */,
@@ -161,13 +166,8 @@
 				4D92C8121F388E6E00341A58 /* SafeItemViewModel.m */,
 				4D92C8131F388E6E00341A58 /* SafeTools.h */,
 				4D92C8141F388E6E00341A58 /* SafeTools.m */,
-				4D92C8151F388E6E00341A58 /* twofish */,
 				4DA595C61F4461B800351BEC /* Utils.h */,
 				4DA595C71F4461B800351BEC /* Utils.m */,
-				4DE419B91F588B2F00158ED5 /* Node.h */,
-				4DE419BA1F588B2F00158ED5 /* Node.m */,
-				4DE419BC1F588C4800158ED5 /* NodeFields.h */,
-				4DE419BD1F588C4800158ED5 /* NodeFields.m */,
 			);
 			name = PwSafeModel;
 			sourceTree = "<group>";

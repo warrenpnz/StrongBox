@@ -12,15 +12,19 @@
 
 @interface Node : NSObject
 
-- (instancetype)init NS_UNAVAILABLE;
+- (instancetype _Nullable )init NS_UNAVAILABLE;
 
-- (instancetype)initAsGroup:(NSString *)title
-            serializationId:(NSString *)serializationId NS_DESIGNATED_INITIALIZER;
+- (instancetype _Nullable )initAsRoot NS_DESIGNATED_INITIALIZER;
 
-- (instancetype)initAsRecord:(NSString *)title
-             serializationId:(NSString *)serializationId
-                      fields:(NodeFields*)fields
-        originalLinkedRecord:(Record*)originalLinkedRecord NS_DESIGNATED_INITIALIZER;
+- (instancetype _Nullable )initAsGroup:(NSString *_Nonnull)title
+                                parent:(Node* _Nonnull)parent NS_DESIGNATED_INITIALIZER;
+
+- (instancetype _Nullable )initAsRecord:(NSString *_Nonnull)title
+                                 parent:(Node* _Nonnull)parent
+                                 fields:(NodeFields*_Nonnull)fields NS_DESIGNATED_INITIALIZER;
+
+- (instancetype _Nullable )initWithExistingPasswordSafe3Record:(Record*_Nonnull)record
+                                                        parent:(Node* _Nonnull)parent NS_DESIGNATED_INITIALIZER;
 
 @property (nonatomic, readonly) BOOL isGroup;
 @property (nonatomic, strong, readonly, nonnull) NSString *title;
@@ -30,9 +34,9 @@
 @property (nonatomic, strong, readonly, nonnull) NSArray<Node*>* children;
 
 - (BOOL)setTitle:(NSString*_Nonnull)title;
-- (BOOL)addChild:(Node* _Nonnull)child;
-- (void)removeChild:(Node* _Nonnull)child;
-- (BOOL)modifyParent:(Node* _Nullable)parent;
+- (BOOL)validateAddChild:(Node* _Nonnull)node;
+- (BOOL)addChild:(Node* _Nonnull)node;
+- (void)removeChild:(Node* _Nonnull)node;
 
 // Required for any fields we ignore/are not aware of so that we don't overwrite them on save, we carry them here
 @property (nonatomic, strong, readonly, nullable) Record *originalLinkedRecord;
