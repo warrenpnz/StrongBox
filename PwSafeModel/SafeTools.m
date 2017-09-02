@@ -300,7 +300,7 @@
     return YES;
 }
 
-+ (NSInteger)getNumBlocks:(NSData*)candidate {
++ (NSInteger)getNumberOfBlocks:(NSData*)candidate {
     NSUInteger endOfData = [SafeTools getEofFileOffset:candidate];
     
     if (endOfData == NSNotFound) {

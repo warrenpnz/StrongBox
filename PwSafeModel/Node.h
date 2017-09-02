@@ -37,10 +37,13 @@
 - (BOOL)validateAddChild:(Node* _Nonnull)node;
 - (BOOL)addChild:(Node* _Nonnull)node;
 - (void)removeChild:(Node* _Nonnull)node;
+- (BOOL)validateChangeParent:(Node*_Nonnull)parent;
+- (BOOL)changeParent:(Node*_Nonnull)parent;
 
 - (Node*_Nullable)getChildGroupWithTitle:(NSString*_Nonnull)title;
 
-- (NSArray<Node*>*_Nonnull)filterChildRecords:(BOOL)recursive predicate:(BOOL (^_Nullable)(Node* _Nonnull node))predicate;
+- (Node*_Nullable)findFirstChild:(BOOL)recursive predicate:(BOOL (^_Nonnull)(Node* _Nonnull node))predicate;
+- (NSArray<Node*>*_Nonnull)filterChildren:(BOOL)recursive predicate:(BOOL (^_Nullable)(Node* _Nonnull node))predicate;
 
 // Required for any fields we ignore/are not aware of so that we don't overwrite them on save, we carry them here
 @property (nonatomic, strong, readonly, nullable) Record *originalLinkedRecord;

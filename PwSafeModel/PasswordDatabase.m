@@ -44,6 +44,7 @@
         self.keyStretchIterations = DEFAULT_KEYSTRETCH_ITERATIONS;
         self.masterPassword = password;
         
+        _rootGroup = [[Node alloc] initAsRoot];
         return self;
     }
     else {
@@ -81,7 +82,7 @@
         
         _rootGroup = [self buildModel:records headers:headerFields];
         
-        if(self.rootGroup) {
+        if(!self.rootGroup) {
             NSLog(@"Could not build model from records and headers?!");
             
             if (ppError != nil) {
@@ -230,7 +231,7 @@
 // Convenience
 
 - (NSArray<Node*>*)getAllRecords {
-    return [self.rootGroup filterChildRecords:YES predicate:^BOOL(Node * _Nonnull node) {
+    return [self.rootGroup filterChildren:YES predicate:^BOOL(Node * _Nonnull node) {
         return !node.isGroup;
     }];
 }
@@ -327,7 +328,7 @@
     
     // DB Header
     
-TODO: Move to serialization - defaults if not exist
+    // TODO: Move to serialization - defaults if not exist
     
     //        // Version
     //
@@ -373,6 +374,7 @@ TODO: Move to serialization - defaults if not exist
     
     // Now all other records
     
+    NSArray* _records; // TODO
     for (Record *record in _records) {
         //NSLog(@"Serializing [%@]", record.title);
         

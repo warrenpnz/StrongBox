@@ -60,7 +60,7 @@
         _isGroup = NO;
         _mutableChildren = nil;
         _uniqueRecordId = [Node generateUniqueId];
-        _fields = [[NodeFields alloc] init];
+        _fields = fields;
 
         return self;
     }
@@ -82,7 +82,8 @@
         self.fields.url = record.url;
         self.fields.notes = record.notes;
         _uniqueRecordId = record.uuid && record.uuid.length ? record.uuid : [Node generateUniqueId];
-
+        _originalLinkedRecord = record;
+        
         return self;
     }
     
@@ -103,7 +104,7 @@
         }
     }
     
-    self.title = title;
+    _title = title;
     return YES;
 }
 
@@ -134,6 +135,38 @@
     [_mutableChildren removeObject:node];
 }
 
+- (BOOL)validateChangeParent:(Node*)parent {
+    return parent != self &&
+    self.parent != parent &&
+    ![parent isChildOf:self] &&
+    [parent validateAddChild:self];
+}
+
+- (BOOL)changeParent:(Node*)parent {
+    if(![self validateChangeParent:parent]) {
+        return NO;
+    }
+    
+    [self.parent removeChild:self];
+    
+    _parent = parent;
+    
+    return [parent addChild:self];
+}
+
+- (BOOL)isChildOf:(Node*)parent {
+    Node* currentParent = self.parent;
+    
+    while(currentParent != nil) {
+        if(currentParent == parent) {
+            return YES;
+        }
+        currentParent = currentParent.parent;
+    }
+    
+    return NO;
+}
+
 - (NSString*)serializationId {
     NSString *identifier;
     if(self.isGroup) {
@@ -158,7 +191,29 @@
     return nil;
 }
 
-- (NSArray<Node*>*_Nonnull)filterChildRecords:(BOOL)recursive predicate:(BOOL (^_Nullable)(Node* _Nonnull node))predicate {
+- (Node*_Nullable)findFirstChild:(BOOL)recursive predicate:(BOOL (^_Nonnull)(Node* _Nonnull node))predicate {
+    for(Node* child in self.children) {
+        if(predicate(child)) {
+            return child;
+        }
+    }
+    
+    if(recursive) {
+        for(Node* child in self.children) {
+            if(child.isGroup) {
+                Node* found = [child findFirstChild:recursive predicate:predicate];
+                
+                if(found) {
+                    return found;
+                }
+            }
+        }
+    }
+    
+    return nil;
+}
+
+- (NSArray<Node*>*_Nonnull)filterChildren:(BOOL)recursive predicate:(BOOL (^_Nullable)(Node* _Nonnull node))predicate {
     NSMutableArray<Node*> *ret = [NSMutableArray array];
     
     NSArray<Node*>* matching;
@@ -177,7 +232,7 @@
     if(recursive) {
         for(Node* child in self.children) {
             if(child.isGroup) {
-                NSArray<Node*> *bar = [child filterChildRecords:recursive predicate:predicate];
+                NSArray<Node*> *bar = [child filterChildren:recursive predicate:predicate];
                 
                 [ret addObjectsFromArray:bar];
             }
@@ -196,6 +251,9 @@
 + (NSArray<NSString*>*)getTitleHierarchy:(Node*)node {
     if(node.parent != nil) {
         NSMutableArray<NSString*> *parentHierarchy = [NSMutableArray arrayWithArray:[Node getTitleHierarchy:node.parent]];
+        
+        [parentHierarchy addObject:node.title];
+        
         return parentHierarchy;
     }
     else {
