@@ -25,7 +25,7 @@
 - (NSData*)getAsData:(NSError**)error;
 
 @property (nonatomic, readonly) Node* rootGroup;
-@property (nonatomic) NSInteger keyStretchIteratios;
+@property (nonatomic) NSInteger keyStretchIterations;
 @property (nonatomic, retain) NSString *masterPassword;
 @property (nonatomic, readonly) NSDate *lastUpdateTime;
 @property (nonatomic, readonly) NSString *lastUpdateUser;

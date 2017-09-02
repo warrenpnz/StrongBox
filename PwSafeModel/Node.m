@@ -148,6 +148,16 @@
     return [NSString stringWithFormat:@"%@%@", self.isGroup ? @"G" : @"R",  identifier];
 }
 
+- (Node*)getChildGroupWithTitle:(NSString*)title {
+    for(Node* child in self.children) {
+        if(child.isGroup && [child.title isEqualToString:title]) {
+            return child;
+        }
+    }
+    
+    return nil;
+}
+
 + (NSString*)generateUniqueId {
     NSUUID *unique = [[NSUUID alloc] init];
     
@@ -163,5 +173,6 @@
         return [NSMutableArray array];
     }
 }
+
 
 @end

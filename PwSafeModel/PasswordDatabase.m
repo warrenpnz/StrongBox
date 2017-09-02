@@ -19,18 +19,14 @@
 @interface PasswordDatabase ()
 
 @property (nonatomic, strong) NSMutableArray<Field*> *dbHeaderFields;
-@property (nonatomic, strong) NSMutableArray<Record*> *records;
-@property (nonatomic, strong) NSArray<Group*> *allGroupsCache;  // PERF/MEM
+//@property (nonatomic, strong) NSMutableArray<Record*> *records;
 
 @end
 
 @implementation PasswordDatabase
 
 + (BOOL)isAValidSafe:(NSData *)candidate {
-    PasswordSafe3Header header;
-    NSUInteger numBlocks;
-    
-    return [SafeTools isAValidSafe:candidate header:&header numBlocks:&numBlocks];
+    return [SafeTools isAValidSafe:candidate];
 }
 
 - (instancetype)initNewWithoutPassword {
@@ -40,33 +36,16 @@
 - (instancetype)initNewWithPassword:(NSString *)password {
     if (self = [super init]) {
         _dbHeaderFields = [[NSMutableArray alloc] init];
-        
-        // Version
-        
-        unsigned char versionBytes[2];
-        versionBytes[0] = 0x0B;
-        versionBytes[1] = 0x03;
-        NSData *versionData = [[NSData alloc] initWithBytes:&versionBytes length:2];
-        Field *version = [[Field alloc] initNewDbHeaderField:HDR_VERSION withData:versionData];
-        [_dbHeaderFields addObject:version];
-        
-        // UUID
-        
-        NSUUID *unique = [[NSUUID alloc] init];
-        unsigned char bytes[16];
-        [unique getUUIDBytes:bytes];
-        Field *uuid = [[Field alloc] initNewDbHeaderField:HDR_UUID withData:[[NSData alloc] initWithBytes:bytes length:16]];
-        [_dbHeaderFields addObject:uuid];
-        
+        //_records = [[NSMutableArray alloc] init];
+
         [self setLastUpdateTime];
         [self setLastUpdateUser];
         [self setLastUpdateHost];
         [self setLastUpdateApp];
         
-        _records = [[NSMutableArray alloc] init];
-        _keyStretchIterations = DEFAULT_KEYSTRETCH_ITERATIONS;
-        
+        self.keyStretchIterations = DEFAULT_KEYSTRETCH_ITERATIONS;
         self.masterPassword = password;
+        
         return self;
     }
     else {
@@ -74,12 +53,11 @@
     }
 }
 
-- (instancetype)initExistingWithDataAndPassword:(NSData *)safeData password:(NSString *)password error:(NSError **)ppError {
+- (instancetype)initExistingWithDataAndPassword:(NSData *)safeData
+                                       password:(NSString *)password
+                                          error:(NSError **)ppError {
     if (self = [super init]) {
-        PasswordSafe3Header header;
-        NSUInteger numBlocks;
-        
-        if (![SafeTools isAValidSafe:safeData header:&header numBlocks:&numBlocks]) {
+        if (![SafeTools isAValidSafe:safeData]) {
             NSLog(@"Not a valid safe!");
             
             if (ppError != nil) {
@@ -88,51 +66,28 @@
             
             return nil;
         }
-        
-        NSData *pBar;
-        
-        if (![SafeTools checkPassword:&header password:password pBar:&pBar]) {
-            NSLog(@"Invalid password!");
-            
-            if (ppError != nil) {
-                *ppError = [Utils createNSError:@"The password is incorrect." errorCode:-2];
-            }
-            
+
+        NSMutableArray<Field*> *headerFields;
+        NSArray<Record*> *records = [self decryptSafe:safeData
+                                             password:password
+                                              headers:&headerFields
+                                                error:ppError];
+
+        if(!records) {
             return nil;
         }
         
-        // We need to get K and L now...
+        _dbHeaderFields = headerFields;
+        self.masterPassword = password;
+        self.keyStretchIterations = [SafeTools getKeyStretchIterations:safeData];
         
-        //NSLog(@"%@", pBar);
+        _rootGroup = [self buildModel:records headers:headerFields];
         
-        NSData *K;
-        NSData *L;
-        
-        [SafeTools getKandL:pBar header:header K_p:&K L_p:&L];
-        
-        //NSLog(@"INIT K: %@", K);
-        //NSLog(@"INIT L: %@", L);
-        
-        NSData *decData = [SafeTools decryptBlocks:K ct:(unsigned char *)&safeData.bytes[SIZE_OF_PASSWORD_SAFE_3_HEADER] iv:header.iv numBlocks:numBlocks];
-        
-        //NSLog(@"DEC: %@", decData);
-        
-        NSMutableArray *records;
-        NSMutableArray *headerFields;
-        
-        NSData *dataForHmac = [SafeTools extractDbHeaderAndRecords:decData headerFields_p:&headerFields records_p:&records];
-        NSData *computedHmac = [SafeTools calculateRFC2104Hmac:dataForHmac key:L];
-        
-        unsigned char *actualHmac[CC_SHA256_DIGEST_LENGTH];
-        [safeData getBytes:actualHmac range:NSMakeRange(safeData.length - CC_SHA256_DIGEST_LENGTH, CC_SHA256_DIGEST_LENGTH)];
-        NSData *actHmac = [[NSData alloc] initWithBytes:actualHmac length:CC_SHA256_DIGEST_LENGTH];
-        //NSLog(@"%@", actHmac);
-        
-        if (![actHmac isEqualToData:computedHmac]) {
-            NSLog(@"HMAC is no good! Corrupted Safe!");
+        if(self.rootGroup) {
+            NSLog(@"Could not build model from records and headers?!");
             
             if (ppError != nil) {
-                *ppError = [Utils createNSError:@"The data is corrupted (HMAC incorrect)." errorCode:-3];
+                *ppError = [Utils createNSError:@"Could not parse this safe." errorCode:-1];
             }
             
             return nil;
@@ -140,16 +95,134 @@
         
         //[SafeTools dumpDbHeaderAndRecords:headerFields records:records];
         
-        _dbHeaderFields = headerFields;
-        _records = records;
-        self.masterPassword = password;
-        _keyStretchIterations = [SafeTools littleEndian4BytesToInteger:header.iter];
-        
         return self;
     }
     else {
         return nil;
     }
+}
+
+- (Node*)buildModel:(NSArray<Record*>*)records headers:(NSArray<Field*>*)headers  {
+    Node* root = [[Node alloc] initAsRoot];
+    
+    // Group Records into by their group
+    
+    NSMutableDictionary<NSArray<NSString*>*, NSMutableArray<Record*>*> *groupedByGroup =
+        [[NSMutableDictionary<NSArray<NSString*>*, NSMutableArray<Record*>*> alloc] init];
+    
+    for (Record *r in records) {
+        NSMutableArray<Record*>* recordsForThisGroup = [groupedByGroup objectForKey:r.group.pathComponents];
+        
+        if(!recordsForThisGroup) {
+            recordsForThisGroup = [NSMutableArray<Record*> array];
+            [groupedByGroup setObject:recordsForThisGroup forKey:r.group.pathComponents];
+        }
+     
+        [recordsForThisGroup addObject:r];
+    }
+
+    NSMutableArray<NSArray<NSString*>*> *allKeys = [[groupedByGroup allKeys] mutableCopy];
+    
+    for (NSArray<NSString*>* groupComponents in allKeys) {
+        Node* group = [self addGroupUsingGroupComponents:root groupComponents:groupComponents];
+        
+        NSMutableArray<Record*>* recordsForThisGroup = [groupedByGroup objectForKey:groupComponents];
+
+        for(Record* record in recordsForThisGroup) {
+            Node* recordNode = [[Node alloc] initWithExistingPasswordSafe3Record:record parent:group];
+            [group addChild:recordNode];
+        }
+    }
+    
+    NSSet<Group*> *emptyGroups = [self getEmptyGroupsFromHeaders:headers];
+    
+    for (Group* emptyGroup in emptyGroups) {
+        [self addGroupUsingGroupComponents:root groupComponents:emptyGroup.pathComponents];
+    }
+    
+    return root;
+}
+
+- (NSSet<Group*>*)getEmptyGroupsFromHeaders:(NSArray<Field*>*)headers {
+    NSMutableSet<Group*> *groups = [[NSMutableSet<Group*> alloc] init];
+    
+    for (Field *field in headers) {
+        if (field.dbHeaderFieldType == HDR_EMPTYGROUP) {
+            NSString *groupName = field.dataAsString;
+            [groups addObject:[[Group alloc] initWithEscapedPathString:groupName]];
+        }
+    }
+    
+    return groups;
+}
+
+- (Node*)addGroupUsingGroupComponents:(Node*)root groupComponents:(NSArray<NSString*>*)groupComponents {
+    Node* node = root;
+    
+    for(NSString* component in groupComponents) {
+        Node* foo = [node getChildGroupWithTitle:component];
+        
+        if(!foo) {
+            foo = [[Node alloc] initAsGroup:component parent:node];
+            [node addChild:foo];
+        }
+        
+        node = foo;
+    }
+    
+    return node;
+}
+
+- (NSArray<Record*> *)decryptSafe:(NSData*)safeData
+                         password:(NSString*)password
+                          headers:(NSMutableArray<Field*> **)headerFields
+                            error:(NSError **)ppError {
+    
+    PasswordSafe3Header header = [SafeTools getHeader:safeData];
+    
+    NSData *pBar;
+    if (![SafeTools checkPassword:&header password:password pBar:&pBar]) {
+        NSLog(@"Invalid password!");
+        
+        if (ppError != nil) {
+            *ppError = [Utils createNSError:@"The password is incorrect." errorCode:-2];
+        }
+        
+        return nil;
+    }
+    
+    NSData *K;
+    NSData *L;
+    
+    [SafeTools getKandL:pBar header:header K_p:&K L_p:&L];
+    
+    NSInteger numBlocks = [SafeTools getNumberOfBlocks:safeData];
+    
+    NSData *decData = [SafeTools decryptBlocks:K
+                                            ct:(unsigned char *)&safeData.bytes[SIZE_OF_PASSWORD_SAFE_3_HEADER]
+                                            iv:header.iv
+                                     numBlocks:numBlocks];
+    
+    NSMutableArray<Record*> *records = [NSMutableArray array];
+    NSData *dataForHmac = [SafeTools extractDbHeaderAndRecords:decData headerFields_p:headerFields records_p:&records];
+    
+    NSData *computedHmac = [SafeTools calculateRFC2104Hmac:dataForHmac key:L];
+    
+    unsigned char *actualHmac[CC_SHA256_DIGEST_LENGTH];
+    [safeData getBytes:actualHmac range:NSMakeRange(safeData.length - CC_SHA256_DIGEST_LENGTH, CC_SHA256_DIGEST_LENGTH)];
+    NSData *actHmac = [[NSData alloc] initWithBytes:actualHmac length:CC_SHA256_DIGEST_LENGTH];
+    
+    if (![actHmac isEqualToData:computedHmac]) {
+        NSLog(@"HMAC is no good! Corrupted Safe!");
+        
+        if (ppError != nil) {
+            *ppError = [Utils createNSError:@"The data is corrupted (HMAC incorrect)." errorCode:-3];
+        }
+        
+        return nil;
+    }
+    
+    return records;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -583,6 +656,31 @@
     NSMutableData *hmacData = [[NSMutableData alloc] init];
     
     // DB Header
+    
+TODO: Move to serialization - defaults if not exist
+    
+    //        // Version
+    //
+    //        unsigned char versionBytes[2];
+    //        versionBytes[0] = 0x0B;
+    //        versionBytes[1] = 0x03;
+    //        NSData *versionData = [[NSData alloc] initWithBytes:&versionBytes length:2];
+    //        Field *version = [[Field alloc] initNewDbHeaderField:HDR_VERSION withData:versionData];
+    //        [_dbHeaderFields addObject:version];
+    //
+    //        // UUID
+    //
+    //        NSUUID *unique = [[NSUUID alloc] init];
+    //        unsigned char bytes[16];
+    //        [unique getUUIDBytes:bytes];
+    //        Field *uuid = [[Field alloc] initNewDbHeaderField:HDR_UUID withData:[[NSData alloc] initWithBytes:bytes length:16]];
+    //        [_dbHeaderFields addObject:uuid];
+    //        
+
+    
+    
+    
+    
     
     NSData *serializedField;
     
