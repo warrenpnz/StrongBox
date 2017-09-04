@@ -17,6 +17,26 @@
 
 @implementation Node
 
+static NSComparator compareNodes = ^(id obj1, id obj2) {
+    Node* n1 = (Node*)obj1;
+    Node* n2 = (Node*)obj2;
+    
+    if(n1.isGroup && !n2.isGroup) {
+        return NSOrderedAscending;
+    }
+    else if(!n1.isGroup && n2.isGroup) {
+        return NSOrderedDescending;
+    }
+    
+    NSComparisonResult result = [n1.title compare:n2.title options:NSCaseInsensitiveSearch];
+
+    if(result == NSOrderedSame) {
+        return [n1.title compare:n2.title];
+    }
+    
+    return result;
+};
+
 - (instancetype)initAsRoot {
     if(self = [super init]) {
         _isGroup = YES;
@@ -105,7 +125,14 @@
     }
     
     _title = title;
+    
+    [self.parent sortChildren];
+    
     return YES;
+}
+
+- (void)sortChildren {
+    [_mutableChildren sortUsingComparator:compareNodes];
 }
 
 - (BOOL)validateAddChild:(Node* _Nonnull)node {
@@ -126,7 +153,12 @@
         return NO;
     }
 
-    [_mutableChildren addObject:node];
+    NSUInteger newIndex = [_mutableChildren indexOfObject:node
+                                 inSortedRange:(NSRange){0, [_mutableChildren count]}
+                                       options:NSBinarySearchingInsertionIndex
+                               usingComparator:compareNodes];
+    
+    [_mutableChildren insertObject:node atIndex:newIndex];
 
     return YES;
 }
@@ -151,7 +183,12 @@
     
     _parent = parent;
     
-    return [parent addChild:self];
+    if([parent addChild:self]) {
+        [parent sortChildren];
+        return YES;
+    }
+    
+    return NO;
 }
 
 - (BOOL)isChildOf:(Node*)parent {
@@ -170,7 +207,7 @@
 - (NSString*)serializationId {
     NSString *identifier;
     if(self.isGroup) {
-        NSArray<NSString*> *titleHierarchy = [Node getTitleHierarchy:self];
+        NSArray<NSString*> *titleHierarchy = [self getTitleHierarchy];
 
         identifier = [titleHierarchy componentsJoinedByString:@":"];
     }
@@ -248,11 +285,11 @@
     return unique.UUIDString;
 }
 
-+ (NSArray<NSString*>*)getTitleHierarchy:(Node*)node {
-    if(node.parent != nil) {
-        NSMutableArray<NSString*> *parentHierarchy = [NSMutableArray arrayWithArray:[Node getTitleHierarchy:node.parent]];
+- (NSArray<NSString*>*)getTitleHierarchy {
+    if(self.parent != nil) {
+        NSMutableArray<NSString*> *parentHierarchy = [NSMutableArray arrayWithArray:[self.parent getTitleHierarchy]];
         
-        [parentHierarchy addObject:node.title];
+        [parentHierarchy addObject:self.title];
         
         return parentHierarchy;
     }

@@ -253,4 +253,8 @@
     return [Utils generatePassword];
 }
 
+- (NSString*_Nonnull)getDiagnosticDumpString {
+    return [self.passwordDatabase getDiagnosticDumpString:YES];
+}
+
 @end

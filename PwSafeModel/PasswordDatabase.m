@@ -99,6 +99,9 @@
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Deserialization
+
 - (Node*)buildModel:(NSArray<Record*>*)records headers:(NSArray<Field*>*)headers  {
     Node* root = [[Node alloc] initAsRoot];
     
@@ -227,6 +230,266 @@
     return records;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Serialization
+
+-(Field*_Nullable) getFirstHeaderFieldOfType:(HeaderFieldType)type {
+    for (Field *field in _dbHeaderFields) {
+        if (field.dbHeaderFieldType == type) {
+            return field;
+        }
+    }
+
+    return nil;
+}
+
+- (void)addDefaultHeaderFieldsIfNotSet {
+    // Version
+    
+    if(![self getFirstHeaderFieldOfType:HDR_VERSION]) {
+        unsigned char versionBytes[2];
+        versionBytes[0] = 0x0B;
+        versionBytes[1] = 0x03;
+        NSData *versionData = [[NSData alloc] initWithBytes:&versionBytes length:2];
+        Field *version = [[Field alloc] initNewDbHeaderField:HDR_VERSION withData:versionData];
+        [_dbHeaderFields addObject:version];
+    }
+
+    // UUID
+
+    if(![self getFirstHeaderFieldOfType:HDR_UUID]) {
+        NSUUID *unique = [[NSUUID alloc] init];
+        unsigned char bytes[16];
+        [unique getUUIDBytes:bytes];
+        Field *uuid = [[Field alloc] initNewDbHeaderField:HDR_UUID withData:[[NSData alloc] initWithBytes:bytes length:16]];
+        [_dbHeaderFields addObject:uuid];
+    }
+}
+
+- (void) deleteEmptyGroupHeaderFields {
+    NSMutableArray<Field*> *fieldsToRemove = [NSMutableArray array];
+    
+    for (Field *field in _dbHeaderFields) {
+        if (field.dbHeaderFieldType == HDR_EMPTYGROUP) {
+            [fieldsToRemove addObject:field];
+        }
+    }
+    
+    for (Field *field in fieldsToRemove) {
+        [_dbHeaderFields removeObject:field];
+    }
+}
+
+- (NSArray<Group*>*)getMinimalEmptyGroupObjectsFromModel {
+    NSArray<Node*> *emptyGroups = [self.rootGroup filterChildren:YES predicate:^BOOL(Node * _Nonnull node) {
+        return node.isGroup && node.children.count == 0;
+    }];
+    
+    NSMutableArray<Group*>* groups = [NSMutableArray array];
+    for(Node* emptyGroup in emptyGroups) {
+        NSArray<NSString*>* pathComponents = [emptyGroup getTitleHierarchy];
+        Group* group = [[Group alloc] initWithPathComponents:pathComponents];
+        [groups addObject:group];
+    }
+    
+    return groups;
+}
+
+- (void)syncEmptyGroupsToHeaders {
+    [self deleteEmptyGroupHeaderFields];
+    
+    NSArray<Group*>* emptyGroups = [self getMinimalEmptyGroupObjectsFromModel];
+
+    for(Group* group in emptyGroups) {
+        Field *emptyGroupField = [[Field alloc] initNewDbHeaderField:HDR_EMPTYGROUP withString:group.escapedPathString];
+        [_dbHeaderFields addObject:emptyGroupField];
+    }
+}
+
+- (NSArray<Record*>* _Nonnull)getRecordsForSerialization {
+    NSArray<Node*> *recordNodes = [self.rootGroup filterChildren:YES predicate:^BOOL(Node * _Nonnull node) {
+        return !node.isGroup;
+    }];
+    
+    NSMutableArray<Record*> *records = [NSMutableArray array];
+    
+    for(Node* recordNode in recordNodes) {
+        Record* record = [self createOrUpdateSerializationRecordWithNode:recordNode];
+        [records addObject:record];
+    }
+    
+    return records;
+}
+
+- (Record* _Nonnull)createOrUpdateSerializationRecordWithNode:(Node* _Nonnull)recordNode {
+    Record *record = recordNode.originalLinkedRecord ? recordNode.originalLinkedRecord : [[Record alloc] init];
+ 
+    record.title = recordNode.title;
+    record.username = recordNode.fields.username;
+    record.password = recordNode.fields.password;
+    record.url = recordNode.fields.url;
+    record.notes = recordNode.fields.notes;
+    
+    return record;
+}
+    
+- (NSData*)getHeaderFieldHmacData {
+    NSMutableData *hmacData = [[NSMutableData alloc] init];
+    
+    for (Field *dbHeaderField in _dbHeaderFields) {
+        [hmacData appendData:dbHeaderField.data];
+    }
+    
+    return hmacData;
+}
+
+- (NSData*)serializeHeaderFields {
+    NSMutableData *toBeEncrypted = [[NSMutableData alloc] init];
+    
+    for (Field *dbHeaderField in _dbHeaderFields) {
+        //NSLog(@"SAVE HDR: %@ -> %@", dbHeaderField.prettyTypeString, dbHeaderField.prettyDataString);
+        NSData* serializedField = [SafeTools serializeField:dbHeaderField];
+        
+        [toBeEncrypted appendData:serializedField];
+    }
+    
+    // Write HDR_END
+    
+    Field *hdrEnd = [[Field alloc] initEmptyDbHeaderField:HDR_END];
+    NSData *serializedField = [SafeTools serializeField:hdrEnd];
+    [toBeEncrypted appendData:serializedField];
+    
+    return toBeEncrypted;
+}
+
+- (NSData*)serializeRecords:(NSArray<Record*>*)records {
+    NSMutableData *toBeEncrypted = [[NSMutableData alloc] init];
+    
+    for (Record *record in records) {
+        for (Field *field in [record getAllFields]) {
+            [toBeEncrypted appendData:[SafeTools serializeField:field]];
+        }
+        
+        // Write RECORD_END
+        
+        Field *end = [[Field alloc] initEmptyWithType:FIELD_TYPE_END];
+        [toBeEncrypted appendData:[SafeTools serializeField:end]];
+    }
+    
+    return toBeEncrypted;
+}
+
+- (NSData*)getRecordsHmacData:(NSArray<Record*>*)records {
+    NSMutableData *hmacData = [[NSMutableData alloc] init];
+    
+    for (Record *record in records) {
+        for (Field *field in [record getAllFields]) {
+            [hmacData appendData:field.data];
+        }
+    }
+    
+    return hmacData;
+}
+
+- (NSData *)getAsData:(NSError**)error {
+    if(!self.masterPassword) {
+        if(error) {
+            *error = [Utils createNSError:@"Master Password not set." errorCode:-3];
+        }
+        
+        return nil;
+    }
+
+    // File Header
+    
+    NSMutableData *ret = [[NSMutableData alloc] init];
+    
+    NSData *K, *L;
+    PasswordSafe3Header hdr = [SafeTools generateNewHeader:(int)self.keyStretchIterations
+                                            masterPassword:self.masterPassword
+                                                         K:&K
+                                                         L:&L];
+  
+    [ret appendBytes:&hdr length:SIZE_OF_PASSWORD_SAFE_3_HEADER];
+    
+    NSMutableData *toBeEncrypted = [[NSMutableData alloc] init];
+    NSMutableData *hmacData = [[NSMutableData alloc] init];
+    
+    // Headers
+
+    [self addDefaultHeaderFieldsIfNotSet];
+    [self syncEmptyGroupsToHeaders];
+    
+    [toBeEncrypted appendData:[self serializeHeaderFields]];
+    [hmacData appendData:[self getHeaderFieldHmacData]];
+    
+    // Records
+
+    NSArray<Record*>* records = [self getRecordsForSerialization];
+    
+    [toBeEncrypted appendData:[self serializeRecords:records]];
+    [hmacData appendData:[self getRecordsHmacData:records]];
+
+    // Encrypt
+    
+    NSData *ct = [SafeTools encryptCBC:K ptData:toBeEncrypted iv:hdr.iv];
+    [ret appendData:ct];
+    
+    // EOF marker
+    
+    NSData *eofMarker = [EOF_MARKER dataUsingEncoding:NSUTF8StringEncoding];
+    [ret appendData:eofMarker];
+    
+    // HMAC
+    
+    NSData *hmac = [SafeTools calculateRFC2104Hmac:hmacData key:L];
+    [ret appendData:hmac];
+    
+    return ret;
+}
+
+- (NSString*)getDiagnosticDumpString:(BOOL)plaintextPasswords {
+    [self addDefaultHeaderFieldsIfNotSet];
+    [self syncEmptyGroupsToHeaders];
+    
+    NSString* dump = [NSString string];
+    
+    dump = [dump stringByAppendingString:@"------------------------------- HEADERS -----------------------------------\n"];
+    
+    for(Field* field in _dbHeaderFields) {
+        dump = [dump stringByAppendingFormat:@"[%-17s]=[%@]\n", [field.prettyTypeString UTF8String], field.prettyDataString];
+    }
+ 
+    dump = [dump stringByAppendingString:@"\n------------------------------- RECORDS -----------------------------------\n"];
+    
+    NSArray<Record*>* records = [self getRecordsForSerialization];
+    
+    for(Record* record in records) {
+        dump = [dump stringByAppendingFormat:@"RECORD: [%@]\n", record.title];
+        dump = [dump stringByAppendingString:@"-------------------------------\n"];
+        
+        for (Field *field in [record getAllFields]) {
+            if(field.type == FIELD_TYPE_PASSWORD && !plaintextPasswords) {
+                dump = [dump stringByAppendingFormat:@"   [%@]=[<HIDDEN>]\n", field.prettyTypeString];
+            }
+            else if(field.type == FIELD_TYPE_NOTES) {
+                NSString *singleLine = [field.prettyDataString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+                dump = [dump stringByAppendingFormat:@"   [%-17s]=[%@]\n", [field.prettyTypeString UTF8String], singleLine];
+            }
+            else {
+                dump = [dump stringByAppendingFormat:@"   [%-17s]=[%@]\n", [field.prettyTypeString UTF8String], field.prettyDataString];
+            }
+        }
+
+        dump = [dump stringByAppendingString:@"---------------------------------------------------------------------------\n"];
+    }
+    
+    
+    dump = [dump stringByAppendingString:@"\n---------------------------------------------------------------------------"];
+
+    return dump;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Convenience
 
@@ -292,154 +555,12 @@
     return mostOccurring;
 }
 
-- (NSData *)getAsData:(NSError**)error {
-    if(!self.masterPassword) {
-        if(error) {
-            *error = [Utils createNSError:@"Master not set." errorCode:-3];
-        }
-        
-        return nil;
-    }
-    
-    [self setLastUpdateTime];
-    [self setLastUpdateUser];
-    [self setLastUpdateHost];
-    [self setLastUpdateApp];
-    
-    NSMutableData *ret = [[NSMutableData alloc] init];
-    
-    NSData *K, *L;
-    
-    //NSLog(@"Key Stretch Iterations: %d", _keyStretchIterations);
-    //[SafeTools dumpDbHeaderAndRecords:_dbHeaderFields records:_records];
-    
-    PasswordSafe3Header hdr = [SafeTools generateNewHeader:(int)self.keyStretchIterations
-                                            masterPassword:self.masterPassword
-                                                         K:&K
-                                                         L:&L];
-    // Header is done...
-    
-    [ret appendBytes:&hdr length:SIZE_OF_PASSWORD_SAFE_3_HEADER];
-    
-    // We fill data buffer with all fields to be encrypted
-    
-    NSMutableData *toBeEncrypted = [[NSMutableData alloc] init];
-    NSMutableData *hmacData = [[NSMutableData alloc] init];
-    
-    // DB Header
-    
-    // TODO: Move to serialization - defaults if not exist
-    
-    //        // Version
-    //
-    //        unsigned char versionBytes[2];
-    //        versionBytes[0] = 0x0B;
-    //        versionBytes[1] = 0x03;
-    //        NSData *versionData = [[NSData alloc] initWithBytes:&versionBytes length:2];
-    //        Field *version = [[Field alloc] initNewDbHeaderField:HDR_VERSION withData:versionData];
-    //        [_dbHeaderFields addObject:version];
-    //
-    //        // UUID
-    //
-    //        NSUUID *unique = [[NSUUID alloc] init];
-    //        unsigned char bytes[16];
-    //        [unique getUUIDBytes:bytes];
-    //        Field *uuid = [[Field alloc] initNewDbHeaderField:HDR_UUID withData:[[NSData alloc] initWithBytes:bytes length:16]];
-    //        [_dbHeaderFields addObject:uuid];
-    //        
+// TODO: Properties? META DATA
 
-    
-    
-    
-    
-    
-    NSData *serializedField;
-    
-    for (Field *dbHeaderField in _dbHeaderFields) {
-        //NSLog(@"SAVE HDR: %@ -> %@", dbHeaderField.prettyTypeString, dbHeaderField.prettyDataString);
-        serializedField = [SafeTools serializeField:dbHeaderField];
-        
-        [toBeEncrypted appendData:serializedField];
-        [hmacData appendData:dbHeaderField.data];
-    }
-    
-    // Write HDR_END
-    
-    Field *hdrEnd = [[Field alloc] initEmptyDbHeaderField:HDR_END];
-    serializedField = [SafeTools serializeField:hdrEnd];
-    [toBeEncrypted appendData:serializedField];
-    [hmacData appendData:hdrEnd.data];
-    
-    // DONE DB Header //
-    
-    // Now all other records
-    
-    NSArray* _records; // TODO
-    for (Record *record in _records) {
-        //NSLog(@"Serializing [%@]", record.title);
-        
-        // Add required fields if they're not present, UUID, Title and Password
-        
-        if ((record.title).length == 0) {
-            record.title = @"<Untitled>";
-        }
-        
-        if ((record.password).length == 0) {
-            record.password = @"";
-        }
-        
-        if ((record.uuid).length == 0) {
-            [record generateNewUUID];
-        }
-        
-        for (Field *field in [record getAllFields]) {
-            serializedField = [SafeTools serializeField:field];
-            [toBeEncrypted appendData:serializedField];
-            [hmacData appendData:field.data];
-        }
-        
-        // Write RECORD_END
-        
-        Field *end = [[Field alloc] initEmptyWithType:FIELD_TYPE_END];
-        serializedField = [SafeTools serializeField:end];
-        [toBeEncrypted appendData:serializedField];
-        [hmacData appendData:end.data];
-    }
-    
-    // Verify our data is a multiple of the block size
-    
-    if (toBeEncrypted.length % TWOFISH_BLOCK_SIZE != 0) {
-        NSLog(@"Data to be encrypted is not a multiple of the block size. Actual Length: %lu", (unsigned long)toBeEncrypted.length);
-        
-        if(error) {
-            *error = [Utils createNSError:@"Internal Error: Data to be encrypted is not a multiple of the block size.." errorCode:-4];
-        }
-        
-        return nil;
-    }
-    
-    //NSLog(@"TBE: %@", toBeEncrypted);
-    NSData *ct = [SafeTools encryptCBC:K ptData:toBeEncrypted iv:hdr.iv];
-    
-    [ret appendData:ct];
-    
-    // We write Plaintext EOF marker - must consume a block
-    
-    NSData *eofMarker = [EOF_MARKER dataUsingEncoding:NSUTF8StringEncoding];
-    [ret appendData:eofMarker];
-    
-    // we calculate the hmac with L and the pt (toBeEncrypted) using sha256
-    
-    //NSLog(@"SAVE L: %@", L);
-    // NSLog(@"SAVE HMACDATA: %@", hmacData);
-    NSData *hmac = [SafeTools calculateRFC2104Hmac:hmacData key:L];
-    //NSLog(@"SAVE HMAC: %@", hmac);
-    
-    [ret appendData:hmac];
-    
-    return ret;
-}
-
+//[self setLastUpdateTime];
+//[self setLastUpdateUser];
+//[self setLastUpdateHost];
+//[self setLastUpdateApp];
 
 - (NSDate *)lastUpdateTime {
     NSDate *ret = nil;

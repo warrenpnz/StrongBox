@@ -46,4 +46,6 @@
 
 - (NSString*_Nonnull)generatePassword;
 
+- (NSString*_Nonnull)getDiagnosticDumpString;
+
 @end

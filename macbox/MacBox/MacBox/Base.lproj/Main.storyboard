@@ -239,6 +239,12 @@ CA
                                                 <action selector="onLock:" target="Ady-hI-5gd" id="Q9q-Rb-BMT"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Copy Diagnostic Safe Dump" id="CBo-SH-vlG">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="onCopyDiagnosticDump:" target="Ady-hI-5gd" id="GjO-BA-qMn"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>
@@ -736,14 +742,14 @@ DQ
                                                                                     <scrollView horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nwU-ra-Y09">
                                                                                         <rect key="frame" x="10" y="62" width="382" height="145"/>
                                                                                         <clipView key="contentView" id="n6X-39-X3W">
-                                                                                            <rect key="frame" x="1" y="1" width="380" height="143"/>
+                                                                                            <rect key="frame" x="1" y="1" width="365" height="143"/>
                                                                                             <autoresizingMask key="autoresizingMask"/>
                                                                                             <subviews>
                                                                                                 <textView importsGraphics="NO" richText="NO" findStyle="panel" allowsCharacterPickerTouchBarItem="NO" allowsUndo="YES" allowsNonContiguousLayout="YES" id="R2W-LK-2el">
-                                                                                                    <rect key="frame" x="0.0" y="0.0" width="380" height="143"/>
+                                                                                                    <rect key="frame" x="0.0" y="0.0" width="365" height="143"/>
                                                                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                                                     <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                                                                                    <size key="minSize" width="380" height="143"/>
+                                                                                                    <size key="minSize" width="365" height="143"/>
                                                                                                     <size key="maxSize" width="463" height="10000000"/>
                                                                                                     <color key="insertionPointColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                                                     <connections>

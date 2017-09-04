@@ -788,6 +788,14 @@ NSString* trim(NSString* str) {
     [self onLaunchUrl:sender];
 }
 
+- (IBAction)onCopyDiagnosticDump:(id)sender {
+    [[NSPasteboard generalPasteboard] clearContents];
+    
+    NSString *dump = [self.model getDiagnosticDumpString];
+    
+    [[NSPasteboard generalPasteboard] setString:dump forType:NSStringPboardType];
+}
+
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)anItem
 {
     SEL theAction = [anItem action];

@@ -24,12 +24,14 @@
 - (NSData*)getAsData:(NSError**)error;
 
 @property (nonatomic, readonly) Node* rootGroup;
+
 @property (nonatomic) NSInteger keyStretchIterations;
 @property (nonatomic, retain) NSString *masterPassword;
-@property (nonatomic, readonly) NSDate *lastUpdateTime;
-@property (nonatomic, readonly) NSString *lastUpdateUser;
-@property (nonatomic, readonly) NSString *lastUpdateHost;
-@property (nonatomic, readonly) NSString *lastUpdateApp;
+
+//@property (nonatomic, readonly) NSDate *lastUpdateTime;
+//@property (nonatomic, readonly) NSString *lastUpdateUser;
+//@property (nonatomic, readonly) NSString *lastUpdateHost;
+//@property (nonatomic, readonly) NSString *lastUpdateApp;
 
 // Helpers
 
@@ -38,6 +40,8 @@
 @property (getter = getMostPopularUsername, readonly, copy) NSString *mostPopularUsername;
 @property (getter = getMostPopularPassword, readonly, copy) NSString *mostPopularPassword;
 @property (readonly, copy) NSString *generatePassword;
+
+- (NSString*)getDiagnosticDumpString:(BOOL)plaintextPasswords;
 
 @end
 

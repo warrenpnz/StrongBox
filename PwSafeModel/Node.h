@@ -40,6 +40,9 @@
 - (BOOL)validateChangeParent:(Node*_Nonnull)parent;
 - (BOOL)changeParent:(Node*_Nonnull)parent;
 
+
+- (NSArray<NSString*>*_Nonnull)getTitleHierarchy;
+
 - (Node*_Nullable)getChildGroupWithTitle:(NSString*_Nonnull)title;
 
 - (Node*_Nullable)findFirstChild:(BOOL)recursive predicate:(BOOL (^_Nonnull)(Node* _Nonnull node))predicate;
