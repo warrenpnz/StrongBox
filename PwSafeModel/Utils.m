@@ -27,7 +27,7 @@
 
 + (NSString *)getAppName {
     NSDictionary *info = [NSBundle mainBundle].infoDictionary;
-    NSString *appName = [NSString stringWithFormat:@"%@ v%@", info[@"CFBundleDisplayName"], info[@"CFBundleShortVersionString"]];
+    NSString *appName = [NSString stringWithFormat:@"%@ v%@", info[@"CFBundleName"], info[@"CFBundleShortVersionString"]];
     
     return appName;
 }
@@ -74,6 +74,13 @@
     }
     
     return randomString;
+}
+
+
+//#define kStrongBoxUser @"StrongBox User"
+
++ (NSString*)getUsername {
+    return NSFullUserName();
 }
 
 @end

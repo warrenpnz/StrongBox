@@ -12,8 +12,6 @@
 #import "SafeTools.h"
 #import <CommonCrypto/CommonHMAC.h>
 
-#define kStrongBoxUser @"StrongBox User"
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 @interface PasswordDatabase ()
@@ -36,11 +34,6 @@
     if (self = [super init]) {
         _dbHeaderFields = [[NSMutableArray alloc] init];
 
-        [self setLastUpdateTime];
-        [self setLastUpdateUser];
-        [self setLastUpdateHost];
-        [self setLastUpdateApp];
-        
         self.keyStretchIterations = DEFAULT_KEYSTRETCH_ITERATIONS;
         self.masterPassword = password;
         
@@ -76,9 +69,14 @@
             return nil;
         }
         
+        // Headers
+        
         _dbHeaderFields = headerFields;
         self.masterPassword = password;
         self.keyStretchIterations = [SafeTools getKeyStretchIterations:safeData];
+        [self syncLastUpdateFieldsFromHeaders];
+        
+        // Records and Groups
         
         _rootGroup = [self buildModel:records headers:headerFields];
         
@@ -233,16 +231,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Serialization
 
--(Field*_Nullable) getFirstHeaderFieldOfType:(HeaderFieldType)type {
-    for (Field *field in _dbHeaderFields) {
-        if (field.dbHeaderFieldType == type) {
-            return field;
-        }
-    }
-
-    return nil;
-}
-
 - (void)addDefaultHeaderFieldsIfNotSet {
     // Version
     
@@ -330,6 +318,14 @@
     record.url = recordNode.fields.url;
     record.notes = recordNode.fields.notes;
     
+    if(!(record.passwordHistory.enabled == NO &&
+         record.passwordHistory.entries.count == 0)) {
+        record.passwordHistory = recordNode.fields.passwordHistory;
+    }
+    else {
+        record.passwordHistory = nil;
+    }
+    
     return record;
 }
     
@@ -391,6 +387,42 @@
     return hmacData;
 }
 
+- (void)defaultLastUpdateFieldsToNow {
+    self.lastUpdateTime = [[NSDate alloc] init];
+    self.lastUpdateUser = [Utils getUsername];
+    self.lastUpdateHost = [Utils hostname];
+    self.lastUpdateApp =  [Utils getAppName];
+}
+
+- (void)syncLastUpdateFieldsToHeaders {
+    [self setHeaderFieldString:HDR_LASTUPDATEAPPLICATION value:self.lastUpdateApp];
+    [self setHeaderFieldString:HDR_LASTUPDATEHOST value:self.lastUpdateHost];
+    [self setHeaderFieldString:HDR_LASTUPDATEUSER value:self.lastUpdateUser];
+    [self setHeaderFieldDate:HDR_LASTUPDATETIME value:self.lastUpdateTime];
+}
+
+- (void)syncLastUpdateFieldsFromHeaders {
+    Field *appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATETIME];
+    if(!appField) {
+        self.lastUpdateTime = appField.dataAsDate;
+    }
+
+    appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATEHOST];
+    if(!appField) {
+        self.lastUpdateHost = appField.dataAsString;
+    }
+
+    appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATEUSER];
+    if(!appField) {
+        self.lastUpdateUser = appField.dataAsString;
+    }
+    
+    appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATEAPPLICATION];
+    if(!appField) {
+        self.lastUpdateApp = appField.dataAsString;
+    }
+}
+
 - (NSData *)getAsData:(NSError**)error {
     if(!self.masterPassword) {
         if(error) {
@@ -419,6 +451,7 @@
 
     [self addDefaultHeaderFieldsIfNotSet];
     [self syncEmptyGroupsToHeaders];
+    [self syncLastUpdateFieldsToHeaders];
     
     [toBeEncrypted appendData:[self serializeHeaderFields]];
     [hmacData appendData:[self getHeaderFieldHmacData]];
@@ -555,136 +588,34 @@
     return mostOccurring;
 }
 
-// TODO: Properties? META DATA
+/////////////////////////////////////////////////////////////////////////////////////////////
 
-//[self setLastUpdateTime];
-//[self setLastUpdateUser];
-//[self setLastUpdateHost];
-//[self setLastUpdateApp];
-
-- (NSDate *)lastUpdateTime {
-    NSDate *ret = nil;
-    
+-(Field*_Nullable) getFirstHeaderFieldOfType:(HeaderFieldType)type {
     for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATETIME) {
-            ret = field.dataAsDate;
-            break;
+        if (field.dbHeaderFieldType == type) {
+            return field;
         }
     }
     
-    return ret;
+    return nil;
 }
 
-- (NSString *)lastUpdateUser {
-    NSString *ret = @"<Unknown>";
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATEUSER) {
-            ret = field.dataAsString;
-            break;
-        }
-    }
-    
-    return ret;
-}
-
-- (NSString *)lastUpdateHost {
-    NSString *ret = @"<Unknown>";
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATEHOST) {
-            ret = field.dataAsString;
-            break;
-        }
-    }
-    
-    return ret;
-}
-
-- (NSString *)lastUpdateApp {
-    NSString *ret = @"<Unknown>";
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATEAPPLICATION) {
-            ret = field.dataAsString;
-            break;
-        }
-    }
-    
-    return ret;
-}
-
-- (void)setLastUpdateApp {
-    Field *appField = nil;
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATEAPPLICATION) {
-            appField = field;
-            break;
-        }
-    }
+- (void)setHeaderFieldString:(HeaderFieldType)type value:(NSString*)value {
+    Field *appField = [self getFirstHeaderFieldOfType:type];
     
     if (appField) {
-        [appField setDataWithString:[Utils getAppName]];
+        [appField setDataWithString:value];
     }
     else {
-        appField = [[Field alloc] initNewDbHeaderField:HDR_LASTUPDATEAPPLICATION withString:[Utils getAppName]];
+        appField = [[Field alloc] initNewDbHeaderField:type withString:value];
         [_dbHeaderFields addObject:appField];
     }
 }
 
-- (void)setLastUpdateHost {
-    Field *appField = nil;
+- (void)setHeaderFieldDate:(HeaderFieldType)type value:(NSDate*)value {
+    Field *appField = [self getFirstHeaderFieldOfType:type];
     
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATEHOST) {
-            appField = field;
-            break;
-        }
-    }
-    
-    NSString *hostName = [Utils hostname]; //[[NSProcessInfo processInfo] hostName];
-    
-    if (appField) {
-        [appField setDataWithString:hostName];
-    }
-    else {
-        Field *lastUpdateHost = [[Field alloc] initNewDbHeaderField:HDR_LASTUPDATEHOST withString:hostName];
-        [_dbHeaderFields addObject:lastUpdateHost];
-    }
-}
-
-- (void)setLastUpdateUser {
-    Field *appField = nil;
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATEUSER) {
-            appField = field;
-            break;
-        }
-    }
-    
-    if (appField) {
-        [appField setDataWithString:kStrongBoxUser];
-    }
-    else {
-        Field *lastUpdateUser = [[Field alloc] initNewDbHeaderField:HDR_LASTUPDATEUSER withString:kStrongBoxUser];
-        [_dbHeaderFields addObject:lastUpdateUser];
-    }
-}
-
-- (void)setLastUpdateTime {
-    Field *appField = nil;
-    
-    for (Field *field in _dbHeaderFields) {
-        if (field.type == HDR_LASTUPDATETIME) {
-            appField = field;
-            break;
-        }
-    }
-    
-    NSDate *now = [[NSDate alloc] init];
-    time_t timeT = (time_t)now.timeIntervalSince1970;
+    time_t timeT = (time_t)value.timeIntervalSince1970;
     NSData *dataTime = [[NSData alloc] initWithBytes:&timeT length:4];
     
     if (appField) {

@@ -14,34 +14,32 @@
 
 @interface PasswordDatabase : NSObject
 
-+ (BOOL)isAValidSafe:(NSData *)candidate;
++ (BOOL)isAValidSafe:(NSData *_Nonnull)candidate;
 
-- (instancetype)init NS_UNAVAILABLE;
-- (instancetype)initNewWithoutPassword;
-- (instancetype)initNewWithPassword:(NSString *)password;
-- (instancetype)initExistingWithDataAndPassword:(NSData *)data password:(NSString *)password error:(NSError **)ppError;
+- (instancetype _Nullable )init NS_UNAVAILABLE;
+- (instancetype _Nullable )initNewWithoutPassword;
+- (instancetype _Nullable )initNewWithPassword:(NSString *_Nullable)password;
+- (instancetype _Nullable )initExistingWithDataAndPassword:(NSData *_Nonnull)data password:(NSString *_Nonnull)password error:(NSError *_Nonnull*_Nonnull)ppError;
 
-- (NSData*)getAsData:(NSError**)error;
+- (NSData* _Nullable)getAsData:(NSError*_Nonnull*_Nonnull)error;
+- (NSString*_Nonnull)getDiagnosticDumpString:(BOOL)plaintextPasswords;
 
-@property (nonatomic, readonly) Node* rootGroup;
+- (void)defaultLastUpdateFieldsToNow;
 
+@property (nonatomic, readonly, nonnull) Node* rootGroup;
 @property (nonatomic) NSInteger keyStretchIterations;
-@property (nonatomic, retain) NSString *masterPassword;
-
-//@property (nonatomic, readonly) NSDate *lastUpdateTime;
-//@property (nonatomic, readonly) NSString *lastUpdateUser;
-//@property (nonatomic, readonly) NSString *lastUpdateHost;
-//@property (nonatomic, readonly) NSString *lastUpdateApp;
+@property (nonatomic, retain, nullable) NSString *masterPassword;
+@property (nonatomic, nullable) NSDate *lastUpdateTime;
+@property (nonatomic, nullable) NSString *lastUpdateUser;
+@property (nonatomic, nullable) NSString *lastUpdateHost;
+@property (nonatomic, nullable) NSString *lastUpdateApp;
 
 // Helpers
 
-@property (getter = getAllExistingUserNames, readonly, copy) NSSet *allExistingUserNames;
-@property (getter = getAllExistingPasswords, readonly, copy) NSSet *allExistingPasswords;
-@property (getter = getMostPopularUsername, readonly, copy) NSString *mostPopularUsername;
-@property (getter = getMostPopularPassword, readonly, copy) NSString *mostPopularPassword;
-@property (readonly, copy) NSString *generatePassword;
-
-- (NSString*)getDiagnosticDumpString:(BOOL)plaintextPasswords;
+@property (getter = getAllExistingUserNames, readonly, copy) NSSet * _Nonnull allExistingUserNames;
+@property (getter = getAllExistingPasswords, readonly, copy) NSSet * _Nonnull allExistingPasswords;
+@property (getter = getMostPopularUsername, readonly, copy) NSString * _Nullable mostPopularUsername;
+@property (getter = getMostPopularPassword, readonly, copy) NSString * _Nullable mostPopularPassword;
 
 @end
 

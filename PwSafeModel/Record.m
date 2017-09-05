@@ -57,7 +57,12 @@
 }
 
 - (void)setPasswordHistory:(PasswordHistory *)passwordHistory {
-    [self setFieldWithData:FIELD_TYPE_PWHIST data:[passwordHistory getAsData]];
+    if(!passwordHistory) {
+        [_fields removeObjectForKey:[NSNumber numberWithInt:FIELD_TYPE_PWHIST]];
+    }
+    else {
+        [self setFieldWithData:FIELD_TYPE_PWHIST data:[passwordHistory getAsData]];
+    }
 }
 
 - (NSDate *)accessed {

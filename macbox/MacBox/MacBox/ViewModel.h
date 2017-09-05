@@ -48,4 +48,6 @@
 
 - (NSString*_Nonnull)getDiagnosticDumpString;
 
+- (void)defaultLastUpdateFieldsToNow;
+
 @end
