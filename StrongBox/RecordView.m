@@ -63,7 +63,7 @@
                                 initForTextField:self.textFieldPassword
                                 viewController:self
                                 suggestionsProvider:^NSArray<NSString *> *(NSString *text) {
-                                    NSSet* allPasswords = [self.viewModel getAllExistingPasswords];
+                                    NSSet* allPasswords = self.viewModel.allExistingPasswords;
                                     
                                     NSArray* filtered = [[allPasswords allObjects]
                                             filteredArrayUsingPredicate:[NSPredicate
@@ -76,7 +76,7 @@
                                 initForTextField:self.textFieldUsername
                                 viewController:self
                                 suggestionsProvider:^NSArray<NSString *> *(NSString *text) {
-                                    NSSet* allUsernames = [self.viewModel getAllExistingUserNames];
+                                    NSSet* allUsernames = self.viewModel.allExistingUserNames;
                                     
                                     NSArray* filtered = [[allUsernames allObjects]
                                             filteredArrayUsingPredicate:[NSPredicate
@@ -148,13 +148,13 @@
 
 - (void)reloadFieldsFromRecord {
     if (self.record) {
-        self.textFieldPassword.text = self.record.password;
-        self.textFieldPassword.text = self.record.password;
+        self.textFieldPassword.text = self.record.fields.password;
+        self.textFieldPassword.text = self.record.fields.password;
         
         self.textFieldTitle.text = self.record.title;
-        self.textFieldUrl.text = self.record.url;
-        self.textFieldUsername.text = self.record.username;
-        self.textViewNotes.text = self.record.notes;
+        self.textFieldUrl.text = self.record.fields.url;
+        self.textFieldUsername.text = self.record.fields.username;
+        self.textViewNotes.text = self.record.fields.notes;
         
         self.buttonSettings.enabled = YES;
     }
@@ -163,7 +163,7 @@
         
         self.textFieldTitle.text = @"Untitled";
         self.textFieldUrl.text = @"";
-        self.textFieldUsername.text = [self.viewModel getMostPopularUsername]; 
+        self.textFieldUsername.text = self.viewModel.mostPopularUsername;
         self.textViewNotes.text = @"";
         
         self.buttonSettings.enabled = NO;
@@ -224,13 +224,13 @@
     UIImage *btnImage = [UIImage imageNamed:self.isEditing ? @"arrow_circle_left_64" : @"copy_64"];
     
     [self.buttonGeneratePassword setImage:btnImage forState:UIControlStateNormal];
-    (self.buttonGeneratePassword).enabled = self.editing || (!self.isEditing && (self.record != nil && (self.record.password).length));
+    (self.buttonGeneratePassword).enabled = self.editing || (!self.isEditing && (self.record != nil && (self.record.fields.password).length));
     
     [self hideOrShowPassword:self.isEditing ? NO : _hidePassword];
     (self.buttonHidePassword).enabled = !self.isEditing;
     
-    (self.buttonCopyUsername).enabled = !self.isEditing && (self.record != nil && (self.record.username).length);
-    (self.buttonCopyUrl).enabled = !self.isEditing && (self.record != nil && (self.record.url).length);
+    (self.buttonCopyUsername).enabled = !self.isEditing && (self.record != nil && (self.record.fields.username).length);
+    (self.buttonCopyUrl).enabled = !self.isEditing && (self.record != nil && (self.record.fields.url).length);
     (self.buttonCopyAndLaunchUrl).enabled = !self.isEditing;
 }
 
@@ -245,11 +245,11 @@
 }
 
 - (BOOL)uiIsDirty {
-    return !([self.textViewNotes.text isEqualToString:self.record.notes]
-             &&   [trim(self.textFieldPassword.text) isEqualToString:self.record.password]
+    return !([self.textViewNotes.text isEqualToString:self.record.fields.notes]
+             &&   [trim(self.textFieldPassword.text) isEqualToString:self.record.fields.password]
              &&   [trim(self.textFieldTitle.text) isEqualToString:self.record.title]
-             &&   [trim(self.textFieldUrl.text) isEqualToString:self.record.url]
-             &&   [trim(self.textFieldUsername.text) isEqualToString:self.record.username]);
+             &&   [trim(self.textFieldUrl.text) isEqualToString:self.record.fields.url]
+             &&   [trim(self.textFieldUsername.text) isEqualToString:self.record.fields.username]);
 }
 
 NSString * trim(NSString *string) {
@@ -282,26 +282,26 @@ NSString * trim(NSString *string) {
     }
     else if (self.record)
     {
-        [self copyToClipboard:self.record.password message:@"Password Copied"];
+        [self copyToClipboard:self.record.fields.password message:@"Password Copied"];
     }
 }
 
 - (IBAction)onCopyUrl:(id)sender {
-    [self copyToClipboard:self.record.url message:@"URL Copied"];
+    [self copyToClipboard:self.record.fields.url message:@"URL Copied"];
 }
 
 - (IBAction)onCopyUsername:(id)sender {
-    [self copyToClipboard:self.record.username message:@"Username Copied"];
+    [self copyToClipboard:self.record.fields.username message:@"Username Copied"];
 }
 
 - (IBAction)onCopyAndLaunchUrl:(id)sender {
-    NSString *urlString = self.record.url;
+    NSString *urlString = self.record.fields.url;
 
     if (!urlString.length) {
         return;
     }
 
-    [self copyToClipboard:self.record.password message:@"Password Copied. Launching URL..."];
+    [self copyToClipboard:self.record.fields.password message:@"Password Copied. Launching URL..."];
     
     if (![urlString.lowercaseString hasPrefix:@"http://"] &&
         ![urlString.lowercaseString hasPrefix:@"https://"]) {
@@ -348,11 +348,11 @@ NSString * trim(NSString *string) {
     if ([segue.identifier isEqual:@"segueToPasswordSettings"] && (self.record != nil))
     {
         PasswordSettingsTableViewController *vc = segue.destinationViewController;
-        vc.model = self.record.passwordHistory;
+        vc.model = self.record.fields.passwordHistory;
         vc.viewModel = self.viewModel;
         
         vc.saveFunction = ^(PasswordHistory *changed, void (^onDone)(NSError *)) {
-            self.record.passwordHistory = changed;
+            self.record.fields.passwordHistory = changed;
             [self save:onDone]; // TODO: This is not handling errors. It should also be done inside the VC
         };
     }
@@ -426,26 +426,30 @@ NSString * trim(NSString *string) {
     BOOL recordNeedsToBeAddedToSafe = (self.record == nil);
     
     if (recordNeedsToBeAddedToSafe) {
-        self.record = [[Record alloc] init];
-        self.record.group = self.currentGroup;
-        self.record.created = [[NSDate alloc] init];
-        [self.viewModel addRecord:self.record];
+        NodeFields *nodeFields = [[NodeFields alloc] initWithUsername:self.record.fields.username
+                                                                  url:trim(self.textFieldUrl.text)
+                                                             password:trim(self.textFieldPassword.text)
+                                                                notes:self.textViewNotes.text
+                                                      passwordHistory:[[PasswordHistory alloc] init]];
+        
+        self.record = [[Node alloc] initAsRecord:trim(self.textFieldTitle.text)
+                                          parent:self.parentGroup
+                                          fields:nodeFields];
+
+        self.record.fields.created = [[NSDate alloc] init];
+        
+        [self.parentGroup addChild:self.record];
     }
-    
-    // Access/Modification Times
-    
-    self.record.accessed = [[NSDate alloc] init];
-    self.record.modified = [[NSDate alloc] init];
-    
-    // Text Fields
-    
-    self.record.notes = self.textViewNotes.text;
-    self.record.password = trim(self.textFieldPassword.text);
-    self.record.title = trim(self.textFieldTitle.text);
-    self.record.url = trim(self.textFieldUrl.text);
-    self.record.username = trim(self.textFieldUsername.text);
-    
-    // Save and Restore UI
+    else {
+        self.record.fields.accessed = [[NSDate alloc] init];
+        self.record.fields.modified = [[NSDate alloc] init];
+
+        self.record.fields.notes = self.textViewNotes.text;
+        self.record.fields.password = trim(self.textFieldPassword.text);
+        self.record.title = trim(self.textFieldTitle.text);
+        self.record.fields.url = trim(self.textFieldUrl.text);
+        self.record.fields.username = trim(self.textFieldUsername.text);
+    }
     
     [self.viewModel update:^(NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^(void) {

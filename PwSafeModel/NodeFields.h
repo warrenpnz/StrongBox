@@ -25,4 +25,9 @@
 @property (nonatomic, strong, nonnull) NSString *notes;
 @property (nonatomic, retain, nonnull) PasswordHistory *passwordHistory;
 
+@property (nonatomic, strong, nullable) NSDate *created;
+@property (nonatomic, strong, nullable) NSDate *modified;
+@property (nonatomic, strong, nullable) NSDate *accessed;
+
+
 @end

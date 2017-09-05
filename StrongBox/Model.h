@@ -64,8 +64,8 @@
 
 @property (nonatomic, readonly, copy) NSSet<NSString*> *_Nonnull allExistingUserNames;
 @property (nonatomic, readonly, copy) NSSet<NSString*> *_Nonnull allExistingPasswords;
-@property (nonatomic, readonly, copy) NSString *_Nullable mostPopularUsername;
-@property (nonatomic, readonly, copy) NSString *_Nullable mostPopularPassword;
+@property (nonatomic, readonly, copy) NSString *_Nonnull mostPopularUsername;
+@property (nonatomic, readonly, copy) NSString *_Nonnull mostPopularPassword;
 @property (nonatomic, readonly, copy) NSString * _Nonnull generatePassword;
 
 @end

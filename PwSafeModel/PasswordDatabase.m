@@ -254,7 +254,7 @@
     }
 }
 
-- (void) deleteEmptyGroupHeaderFields {
+- (void)deleteEmptyGroupHeaderFields {
     NSMutableArray<Field*> *fieldsToRemove = [NSMutableArray array];
     
     for (Field *field in _dbHeaderFields) {
@@ -325,6 +325,10 @@
     else {
         record.passwordHistory = nil;
     }
+    
+    record.accessed = recordNode.fields.accessed;
+    record.created = recordNode.fields.created;
+    record.modified = recordNode.fields.modified;
     
     return record;
 }

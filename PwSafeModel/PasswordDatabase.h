@@ -38,8 +38,8 @@
 
 @property (getter = getAllExistingUserNames, readonly, copy) NSSet * _Nonnull allExistingUserNames;
 @property (getter = getAllExistingPasswords, readonly, copy) NSSet * _Nonnull allExistingPasswords;
-@property (getter = getMostPopularUsername, readonly, copy) NSString * _Nullable mostPopularUsername;
-@property (getter = getMostPopularPassword, readonly, copy) NSString * _Nullable mostPopularPassword;
+@property (getter = getMostPopularUsername, readonly, copy) NSString * _Nonnull mostPopularUsername;
+@property (getter = getMostPopularPassword, readonly, copy) NSString * _Nonnull mostPopularPassword;
 
 @end
 
