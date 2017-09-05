@@ -52,6 +52,7 @@
 
 // Get/Query
 
+@property (nonatomic, readonly, nonnull) Node * rootGroup;
 @property (nonatomic, readonly) NSDate * _Nullable lastUpdateTime;
 @property (nonatomic, readonly) NSString * _Nullable lastUpdateUser;
 @property (nonatomic, readonly) NSString * _Nullable lastUpdateHost;

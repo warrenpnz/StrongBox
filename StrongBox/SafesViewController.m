@@ -415,9 +415,8 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.identifier isEqualToString:@"segueToOpenSafeView"]) {
         BrowseSafeView *vc = segue.destinationViewController;
-        
-        vc.currentGroup = nil;
         vc.viewModel = (Model *)sender;
+        vc.currentGroup = vc.viewModel.rootGroup;
     }
     else if ([segue.identifier isEqualToString:@"segueToStorageType"])
     {

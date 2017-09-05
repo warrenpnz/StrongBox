@@ -10,6 +10,8 @@
 		4D0165401EDB2F9C00CCB8CF /* SafeMetaData.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D0165311EDB2F9C00CCB8CF /* SafeMetaData.m */; };
 		4D0BA7D81F23B844009243C9 /* Settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D0BA7D71F23B844009243C9 /* Settings.m */; };
 		4D0BA7DB1F23CA2A009243C9 /* PreferencesTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D0BA7DA1F23CA2A009243C9 /* PreferencesTableViewController.m */; };
+		4D1398A31F5F0B66002608E4 /* Node.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D1398A01F5F0B66002608E4 /* Node.m */; };
+		4D1398A41F5F0B66002608E4 /* NodeFields.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D1398A21F5F0B66002608E4 /* NodeFields.m */; };
 		4D1757BB1C8361D300E6356F /* BrowseSafeView.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D1757901C8361D200E6356F /* BrowseSafeView.m */; };
 		4D1757BF1C8361D300E6356F /* formatV3.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4D1757961C8361D200E6356F /* formatV3.txt */; };
 		4D1757C01C8361D300E6356F /* GoogleDriveManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D1757981C8361D200E6356F /* GoogleDriveManager.m */; };
@@ -62,6 +64,10 @@
 		4D0BA7D71F23B844009243C9 /* Settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Settings.m; sourceTree = "<group>"; };
 		4D0BA7D91F23CA2A009243C9 /* PreferencesTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PreferencesTableViewController.h; sourceTree = "<group>"; };
 		4D0BA7DA1F23CA2A009243C9 /* PreferencesTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PreferencesTableViewController.m; sourceTree = "<group>"; };
+		4D13989F1F5F0B66002608E4 /* Node.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Node.h; path = macbox/MacBox/../../PwSafeModel/Node.h; sourceTree = SOURCE_ROOT; };
+		4D1398A01F5F0B66002608E4 /* Node.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Node.m; path = macbox/MacBox/../../PwSafeModel/Node.m; sourceTree = SOURCE_ROOT; };
+		4D1398A11F5F0B66002608E4 /* NodeFields.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NodeFields.h; path = macbox/MacBox/../../PwSafeModel/NodeFields.h; sourceTree = SOURCE_ROOT; };
+		4D1398A21F5F0B66002608E4 /* NodeFields.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = NodeFields.m; path = macbox/MacBox/../../PwSafeModel/NodeFields.m; sourceTree = SOURCE_ROOT; };
 		4D17578F1C8361D200E6356F /* BrowseSafeView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BrowseSafeView.h; sourceTree = "<group>"; };
 		4D1757901C8361D200E6356F /* BrowseSafeView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BrowseSafeView.m; sourceTree = "<group>"; };
 		4D1757961C8361D200E6356F /* formatV3.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = formatV3.txt; sourceTree = "<group>"; };
@@ -230,6 +236,10 @@
 		4D92C7DA1F388CF200341A58 /* PwSafeModel */ = {
 			isa = PBXGroup;
 			children = (
+				4D13989F1F5F0B66002608E4 /* Node.h */,
+				4D1398A01F5F0B66002608E4 /* Node.m */,
+				4D1398A11F5F0B66002608E4 /* NodeFields.h */,
+				4D1398A21F5F0B66002608E4 /* NodeFields.m */,
 				4D3694DC1F54547100A82811 /* Utils.h */,
 				4D3694DD1F54547100A82811 /* Utils.m */,
 				4D68DBB11F430ECB00A8A148 /* PasswordDatabase.h */,
@@ -478,6 +488,7 @@
 				4D92C7FF1F388DFF00341A58 /* crypt_argchk.c in Sources */,
 				4DD59F541D3A5A7300F864ED /* main.m in Sources */,
 				4D915D741EDC068D002615F6 /* PasswordSettingsTableViewController.m in Sources */,
+				4D1398A41F5F0B66002608E4 /* NodeFields.m in Sources */,
 				4DF785FB1EDB319E006D4918 /* SafesCollection.m in Sources */,
 				4D92C7F11F388D0900341A58 /* Field.m in Sources */,
 				4DFAA3871EDDBFA8003FB355 /* AddSafeAlertController.m in Sources */,
@@ -503,6 +514,7 @@
 				4D4C49041EDEC0B900EB857D /* RecordView.m in Sources */,
 				4D40EEEE1ED87734006532F8 /* StorageBrowserTableViewController.m in Sources */,
 				4D1757C01C8361D300E6356F /* GoogleDriveManager.m in Sources */,
+				4D1398A31F5F0B66002608E4 /* Node.m in Sources */,
 				4D1D6FD71F38760F00D2B8EC /* Model.m in Sources */,
 				4D1757C91C8361D300E6356F /* SafeDetailsAndSettingsView.m in Sources */,
 				4D0165401EDB2F9C00CCB8CF /* SafeMetaData.m in Sources */,

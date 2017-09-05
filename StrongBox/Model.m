@@ -45,6 +45,9 @@
     }
 }
 
+- (Node*)rootGroup {
+    return self.passwordDatabase.rootGroup;
+}
 - (BOOL)isCloudBasedStorage {
     return _storageProvider.cloudBased;
 }
