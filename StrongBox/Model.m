@@ -8,7 +8,6 @@
 
 #import "Model.h"
 #import "Utils.h"
-#import "SafeItemViewModel.h"
 
 @interface Model ()
 
@@ -183,10 +182,52 @@
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+// Operations
 
-- (SafeItemViewModel *)createGroupWithTitle:(Group *)parent title:(NSString *)title {
-    return [self.passwordDatabase createGroupWithTitle:parent title:title validateOnly:NO];
+- (Node*)addNewRecord:(Node *_Nonnull)parentGroup {
+    NSString* password = [self generatePassword];
+    
+    NodeFields* fields = [[NodeFields alloc] initWithUsername:@"user123"
+                                                          url:@"https://strongboxsafe.com"
+                                                     password:password
+                                                        notes:@"Sample Database Record. You can have any text here..."
+                                              passwordHistory:[[PasswordHistory alloc] init]];
+    
+    Node* record = [[Node alloc] initAsRecord:@"New Untitled Record" parent:parentGroup fields:fields];
+    
+    if([parentGroup addChild:record]) {
+        return record;
+    }
+    
+    return nil;
 }
+
+- (Node*)addNewGroup:(Node *_Nonnull)parentGroup title:(NSString*)title {
+    Node* newGroup = [[Node alloc] initAsGroup:title parent:parentGroup];
+    if( [parentGroup addChild:newGroup]) {
+        return newGroup;
+    }
+
+    return nil;
+}
+
+- (void)deleteItem:(Node *_Nonnull)child {
+    [child.parent removeChild:child];
+}
+
+- (BOOL)validateChangeParent:(Node *_Nonnull)parent node:(Node *_Nonnull)node {
+    return [node validateChangeParent:parent];
+}
+
+- (BOOL)changeParent:(Node *_Nonnull)parent node:(Node *_Nonnull)node {
+    return [node changeParent:parent];
+}
+
+- (void)defaultLastUpdateFieldsToNow {
+    [self.passwordDatabase defaultLastUpdateFieldsToNow];
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (NSString *)getMasterPassword {
     return self.passwordDatabase.masterPassword;
@@ -213,56 +254,11 @@
 }
     
 -(NSData*)getSafeAsData:(NSError**)error {
-    NSData *updatedSafeData = [self.passwordDatabase getAsData:error];
-
-    return updatedSafeData;
-}
-
-- (SafeItemViewModel*)addRecord:(Record *)newRecord {
-    return [self.passwordDatabase addRecord:newRecord];
-}
-
-- (NSArray *)getSearchableItems {
-    return [self.passwordDatabase getSearchableItems];
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Regular Displayable Items
-
-- (NSArray *)getImmediateSubgroupsForParent:(Group *)group {
-    return [self.passwordDatabase getImmediateSubgroupsForParent:group];
-}
-
-- (NSArray *)getItemsForGroup:(Group *)group {
-    return [self.passwordDatabase getItemsForGroup:group withFilter:nil];
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (BOOL)validateMoveItems:(NSArray *)items destination:(Group *)group {
-    return [self.passwordDatabase validateMoveItems:items destination:group];
-}
-
-- (BOOL)validateMoveItems:(NSArray *)items
-              destination:(Group *)group
-checkIfMoveIntoSubgroupOfDestinationOk:(BOOL)checkIfMoveIntoSubgroupOfDestinationOk {
-    return [self.passwordDatabase validateMoveItems:items destination:group checkIfMoveIntoSubgroupOfDestinationOk:checkIfMoveIntoSubgroupOfDestinationOk];
-}
-
-- (void)moveItems:(NSArray *)items destination:(Group *)group {
-    return [self.passwordDatabase moveItems:items destination:group];
-}
-
-- (void)deleteItems:(NSArray *)items {
-    return [self.passwordDatabase deleteItems:items];
-}
-
-- (void)deleteItem:(SafeItemViewModel *)item {
-    return [self.passwordDatabase deleteItem:item];
+    return [self.passwordDatabase getAsData:error];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-// Auto complete helper
+// Convenience  / Helpers
 
 - (NSSet *)getAllExistingUserNames {
     return self.passwordDatabase.getAllExistingUserNames;
@@ -281,7 +277,7 @@ checkIfMoveIntoSubgroupOfDestinationOk:(BOOL)checkIfMoveIntoSubgroupOfDestinatio
 }
 
 - (NSString *)generatePassword {
-    return self.passwordDatabase.generatePassword;
+    return [Utils generatePassword];
 }
 
 @end

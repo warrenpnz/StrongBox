@@ -12,8 +12,9 @@
 
 @interface RecordView : UITableViewController <UITextViewDelegate>
 
-@property (nonatomic, strong) Record *record;
-@property (nonatomic, strong) Group *currentGroup;
+//@property (nonatomic, strong) Record *record;
+@property (nonatomic, strong) Node *currentGroup;
+
 @property (nonatomic, strong) Model *viewModel;
 
 @property (weak, nonatomic) IBOutlet UITextView *textViewNotes;
