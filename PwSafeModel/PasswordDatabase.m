@@ -317,6 +317,7 @@
     record.password = recordNode.fields.password;
     record.url = recordNode.fields.url;
     record.notes = recordNode.fields.notes;
+    record.group = [[Group alloc] initWithPathComponents:[recordNode.parent getTitleHierarchy]];
     
     if(!(recordNode.fields.passwordHistory.enabled == NO &&
          recordNode.fields.passwordHistory.entries.count == 0)) {

@@ -35,7 +35,7 @@
 - (void)setItemNotes:(Node*_Nullable)item notes:(NSString*_Nonnull)notes;
 
 - (Node*_Nonnull)addNewRecord:(Node *_Nonnull)parentGroup;
-- (Node*_Nonnull)addNewGroup:(Node *_Nonnull)parentGroup title:(NSString*_Nonnull)title;
+- (Node*_Nonnull)addNewGroup:(Node *_Nonnull)parentGroup;
 
 - (void)deleteItem:(Node *_Nonnull)child;
 

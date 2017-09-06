@@ -18,8 +18,8 @@
 
 @interface BrowseSafeView () <MFMailComposeViewControllerDelegate, UISearchBarDelegate, UISearchResultsUpdating>
 
-@property (strong, nonatomic) NSMutableArray<Node*> *searchResults;
-@property (strong, nonatomic) NSMutableArray<Node*> *items;
+@property (strong, nonatomic) NSArray<Node*> *searchResults;
+@property (strong, nonatomic) NSArray<Node*> *items;
 @property (strong, nonatomic) UISearchController *searchController;
 @property (strong, nonatomic) UIBarButtonItem *savedOriginalNavButton;
 @property (strong, nonatomic) UILongPressGestureRecognizer *longPressRecognizer;
@@ -27,6 +27,26 @@
 @end
 
 @implementation BrowseSafeView
+
+static NSComparator searchResultsComparator = ^(id obj1, id obj2) {
+    Node* n1 = (Node*)obj1;
+    Node* n2 = (Node*)obj2;
+    
+    if(n1.isGroup && !n2.isGroup) {
+        return NSOrderedDescending;
+    }
+    else if(!n1.isGroup && n2.isGroup) {
+        return NSOrderedAscending;
+    }
+    
+    NSComparisonResult result = [n1.title compare:n2.title options:NSCaseInsensitiveSearch];
+    
+    if(result == NSOrderedSame) {
+        return [n1.title compare:n2.title];
+    }
+    
+    return result;
+};
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -116,10 +136,6 @@
 }
 
 - (void)filterContentForSearchText:(NSString *)searchText scope:(NSInteger)scope {
-    [self.searchResults removeAllObjects];
-    
-    NSArray *allItems = [NSArray array]; // [self.viewModel getSearchableItems];
-    
     NSPredicate *predicate;
     
     if (scope == 0) {
@@ -127,17 +143,21 @@
     }
     else if (scope == 1)
     {
-        predicate = [NSPredicate predicateWithFormat:@"username contains[c] %@", searchText];
+        predicate = [NSPredicate predicateWithFormat:@"fields.username contains[c] %@", searchText];
     }
     else if (scope == 2)
     {
-        predicate = [NSPredicate predicateWithFormat:@"password contains[c] %@", searchText];
+        predicate = [NSPredicate predicateWithFormat:@"fields.password contains[c] %@", searchText];
     }
     else {
-        predicate = [NSPredicate predicateWithFormat:@"title contains[c] %@ OR password contains[c] %@  OR username contains[c] %@  OR url contains[c] %@  OR notes contains[c] %@", searchText, searchText, searchText, searchText, searchText];
+        predicate = [NSPredicate predicateWithFormat:@"title contains[c] %@ OR fields.password contains[c] %@  OR fields.username contains[c] %@  OR fields.url contains[c] %@  OR fields.notes contains[c] %@", searchText, searchText, searchText, searchText, searchText];
     }
     
-    self.searchResults = [NSMutableArray arrayWithArray:[allItems filteredArrayUsingPredicate:predicate]];
+    NSArray<Node*> *foo = [self.viewModel.rootGroup filterChildren:YES predicate:^BOOL(Node * _Nonnull node) {
+        return [predicate evaluateWithObject:node];
+    }];
+    
+    self.searchResults = [foo sortedArrayUsingComparator:searchResultsComparator];
 }
 
 - (void)searchBar:(UISearchBar *)searchBar selectedScopeButtonIndexDidChange:(NSInteger)selectedScope {
@@ -152,8 +172,13 @@
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"OpenSafeViewCell" forIndexPath:indexPath];
     Node *vm = [self getDataSource][indexPath.row];
     
-    cell.textLabel.text = vm.title;
-    cell.detailTextLabel.text = vm.isGroup ? (self.searchController.isActive ? [self getGroupPathDisplayString:vm] : @"") : vm.fields.username;
+    NSString *groupLocation = (self.searchController.isActive ? [self getGroupPathDisplayString:vm] : vm.isGroup ? @"" : vm.fields.username);
+    
+    cell.textLabel.text = vm.isGroup ? vm.title :
+        (self.searchController.isActive ? [NSString stringWithFormat:@"%@ [%@]", vm.title, vm.fields.username] :
+         vm.title);
+    
+    cell.detailTextLabel.text = groupLocation;
     cell.accessoryType = vm.isGroup ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
     cell.imageView.image = vm.isGroup ? [UIImage imageNamed:@"folder-80.png"] : [UIImage imageNamed:@"lock-48.png"];
     
@@ -215,7 +240,7 @@
     
     NSString *path = [[hierarchy subarrayWithRange:NSMakeRange(0, hierarchy.count - 1)] componentsJoinedByString:@"/"];
     
-    return hierarchy.count == 1 ? @"" : [NSString stringWithFormat:@"(in %@)", path];
+    return hierarchy.count == 1 ? @"(in /)" : [NSString stringWithFormat:@"(in /%@)", path];
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {

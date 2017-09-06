@@ -124,8 +124,7 @@
     NodeFields* fields = [[NodeFields alloc] initWithUsername:@"user123"
                                               url:@"https://strongboxsafe.com"
                                          password:password
-                                            notes:@"Sample Database Record. You can have any text here..."
-                                    passwordHistory:[[PasswordHistory alloc] init]];
+                                            notes:@"Sample Database Record. You can have any text here..."];
     
     Node* record = [[Node alloc] initAsRecord:@"New Untitled Record" parent:group fields:fields];
     

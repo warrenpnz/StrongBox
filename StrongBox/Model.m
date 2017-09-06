@@ -64,6 +64,7 @@
     if (!_isUsingOfflineCache && !_isReadOnly) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void)
         {
+            [self.passwordDatabase defaultLastUpdateFieldsToNow];
             NSError *error;
             NSData *updatedSafeData = [self.passwordDatabase getAsData:&error];
             dispatch_async(dispatch_get_main_queue(), ^(void) {
