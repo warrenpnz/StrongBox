@@ -14,24 +14,45 @@
     return [self initWithUsername:@""
                               url:@""
                          password:@""
-                            notes:@""
-                  passwordHistory:[[PasswordHistory alloc] init]];
+                            notes:@""];
 }
 
 - (instancetype _Nullable)initWithUsername:(NSString*_Nonnull)username
                                        url:(NSString*_Nonnull)url
                                   password:(NSString*_Nonnull)password
-                                     notes:(NSString*_Nonnull)notes
-                           passwordHistory:(PasswordHistory*_Nonnull)passwordHistory {
+                                     notes:(NSString*_Nonnull)notes {
     if (self = [super init]) {
         self.username = username;
         self.url = url;
         self.password = password;
         self.notes = notes;
-        self.passwordHistory = passwordHistory;
+        self.passwordHistory = [[PasswordHistory alloc] init];
+        self.created = [NSDate date];
     }
     
     return self;
+}
+
+- (void)setPassword:(NSString *)password {
+    if([password isEqualToString:_password]) {
+        return;
+    }
+    
+    _password = password;
+    self.passwordModified = [NSDate date];
+    
+    PasswordHistory *pwHistory = self.passwordHistory;
+    
+    if (pwHistory.enabled && pwHistory.maximumSize > 0 && password) {
+        [pwHistory.entries addObject:[[PasswordHistoryEntry alloc] initWithPassword:password]];
+        
+        if ((pwHistory.entries).count > pwHistory.maximumSize) {
+            NSUInteger count = (pwHistory.entries).count;
+            NSArray *slice = [pwHistory.entries subarrayWithRange:(NSRange) {count - pwHistory.maximumSize, pwHistory.maximumSize }];
+            [pwHistory.entries removeAllObjects];
+            [pwHistory.entries addObjectsFromArray:slice];
+        }
+    }
 }
 
 @end

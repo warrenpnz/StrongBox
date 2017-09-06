@@ -43,8 +43,8 @@
 
 // Operations
 
-- (Node*_Nonnull)addNewRecord:(Node *_Nonnull)parentGroup;
-- (Node*_Nonnull)addNewGroup:(Node *_Nonnull)parentGroup title:(NSString*_Nonnull)title;
+- (Node* _Nullable)addNewRecord:(Node *_Nonnull)parentGroup;
+- (Node* _Nullable)addNewGroup:(Node *_Nonnull)parentGroup title:(NSString*_Nonnull)title;
 - (void)deleteItem:(Node *_Nonnull)child;
 - (BOOL)validateChangeParent:(Node *_Nonnull)parent node:(Node *_Nonnull)node;
 - (BOOL)changeParent:(Node *_Nonnull)parent node:(Node *_Nonnull)node;
@@ -63,8 +63,8 @@
 
 // Convenience  / Helpers
 
-@property (nonatomic, readonly, copy) NSSet<NSString*> *_Nonnull allExistingUserNames;
-@property (nonatomic, readonly, copy) NSSet<NSString*> *_Nonnull allExistingPasswords;
+@property (nonatomic, readonly, copy) NSSet<NSString*> *_Nonnull usernameSet;
+@property (nonatomic, readonly, copy) NSSet<NSString*> *_Nonnull passwordSet;
 @property (nonatomic, readonly, copy) NSString *_Nonnull mostPopularUsername;
 @property (nonatomic, readonly, copy) NSString *_Nonnull mostPopularPassword;
 @property (nonatomic, readonly, copy) NSString * _Nonnull generatePassword;

@@ -193,8 +193,7 @@
     NodeFields* fields = [[NodeFields alloc] initWithUsername:@"user123"
                                                           url:@"https://strongboxsafe.com"
                                                      password:password
-                                                        notes:@"Sample Database Record. You can have any text here..."
-                                              passwordHistory:[[PasswordHistory alloc] init]];
+                                                        notes:@"Sample Database Record. You can have any text here..."];
     
     Node* record = [[Node alloc] initAsRecord:@"New Untitled Record" parent:parentGroup fields:fields];
     
@@ -263,20 +262,20 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Convenience  / Helpers
 
-- (NSSet *)getAllExistingUserNames {
-    return self.passwordDatabase.getAllExistingUserNames;
+- (NSSet<NSString*> *)usernameSet {
+    return self.passwordDatabase.usernameSet;
 }
 
-- (NSSet *)getAllExistingPasswords {
-    return self.passwordDatabase.getAllExistingPasswords;
+- (NSSet<NSString*> *)passwordSet {
+    return self.passwordDatabase.passwordSet;
 }
 
-- (NSString *)getMostPopularUsername {
-    return self.passwordDatabase.getMostPopularUsername;
+- (NSString *)mostPopularUsername {
+    return self.passwordDatabase.mostPopularUsername;
 }
 
-- (NSString *)getMostPopularPassword {
-    return self.passwordDatabase.getMostPopularPassword;
+- (NSString *)mostPopularPassword {
+    return self.passwordDatabase.mostPopularPassword;
 }
 
 - (NSString *)generatePassword {

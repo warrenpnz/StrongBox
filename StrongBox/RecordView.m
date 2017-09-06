@@ -63,9 +63,9 @@
                                 initForTextField:self.textFieldPassword
                                 viewController:self
                                 suggestionsProvider:^NSArray<NSString *> *(NSString *text) {
-                                    NSSet* allPasswords = self.viewModel.allExistingPasswords;
+                                    NSSet<NSString*> *allPasswords = self.viewModel.passwordSet;
                                     
-                                    NSArray* filtered = [[allPasswords allObjects]
+                                    NSArray<NSString*> *filtered = [[allPasswords allObjects]
                                             filteredArrayUsingPredicate:[NSPredicate
                                                                          predicateWithFormat:@"SELF BEGINSWITH[c] %@", text]];
                                     
@@ -76,7 +76,7 @@
                                 initForTextField:self.textFieldUsername
                                 viewController:self
                                 suggestionsProvider:^NSArray<NSString *> *(NSString *text) {
-                                    NSSet* allUsernames = self.viewModel.allExistingUserNames;
+                                    NSSet<NSString*> *allUsernames = self.viewModel.usernameSet;
                                     
                                     NSArray* filtered = [[allUsernames allObjects]
                                             filteredArrayUsingPredicate:[NSPredicate
@@ -426,11 +426,10 @@ NSString * trim(NSString *string) {
     BOOL recordNeedsToBeAddedToSafe = (self.record == nil);
     
     if (recordNeedsToBeAddedToSafe) {
-        NodeFields *nodeFields = [[NodeFields alloc] initWithUsername:self.record.fields.username
+        NodeFields *nodeFields = [[NodeFields alloc] initWithUsername:trim(self.textFieldUsername.text)
                                                                   url:trim(self.textFieldUrl.text)
                                                              password:trim(self.textFieldPassword.text)
-                                                                notes:self.textViewNotes.text
-                                                      passwordHistory:[[PasswordHistory alloc] init]];
+                                                                notes:self.textViewNotes.text];
         
         self.record = [[Node alloc] initAsRecord:trim(self.textFieldTitle.text)
                                           parent:self.parentGroup

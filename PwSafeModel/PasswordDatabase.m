@@ -318,8 +318,8 @@
     record.url = recordNode.fields.url;
     record.notes = recordNode.fields.notes;
     
-    if(!(record.passwordHistory.enabled == NO &&
-         record.passwordHistory.entries.count == 0)) {
+    if(!(recordNode.fields.passwordHistory.enabled == NO &&
+         recordNode.fields.passwordHistory.entries.count == 0)) {
         record.passwordHistory = recordNode.fields.passwordHistory;
     }
     else {
@@ -536,7 +536,7 @@
     }];
 }
 
-- (NSSet<NSString*> *)getUsernamesSet {
+- (NSSet<NSString*> *)usernameSet {
     NSMutableSet<NSString*> *bag = [[NSMutableSet alloc]init];
 
     for (Node *recordNode in [self getAllRecords]) {
@@ -546,7 +546,7 @@
     return bag;
 }
 
-- (NSSet<NSString*> *)getAllExistingPasswords {
+- (NSSet<NSString*> *)passwordSet {
     NSMutableSet<NSString*> *bag = [[NSMutableSet alloc]init];
 
     for (Node *record in [self getAllRecords]) {
@@ -556,7 +556,7 @@
     return bag;
 }
 
-- (NSString *)getMostPopularUsername {
+- (NSString *)mostPopularUsername {
     NSCountedSet<NSString*> *bag = [[NSCountedSet alloc]init];
 
     for (Node *record in [self getAllRecords]) {
@@ -568,7 +568,7 @@
     return [self mostFrequentInCountedSet:bag];
 }
 
-- (NSString *)getMostPopularPassword {
+- (NSString *)mostPopularPassword {
     NSCountedSet<NSString*> *bag = [[NSCountedSet alloc]init];
 
     for (Node *record in [self getAllRecords]) {

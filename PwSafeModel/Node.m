@@ -95,16 +95,18 @@ static NSComparator compareNodes = ^(id obj1, id obj2) {
         _mutableChildren = nil;
         _fields = [[NodeFields alloc] init];
         _parent = parent;
-
         _title = record.title;
+        
         self.fields.username = record.username;
         self.fields.password = record.password;
         self.fields.url = record.url;
         self.fields.notes = record.notes;
+        self.fields.passwordHistory = record.passwordHistory;
         
         self.fields.accessed = record.accessed;
         self.fields.modified = record.modified;
         self.fields.created = record.created;
+        self.fields.passwordModified = record.passwordModified;
         
         _uniqueRecordId = record.uuid && record.uuid.length ? record.uuid : [Node generateUniqueId];
         _originalLinkedRecord = record;
