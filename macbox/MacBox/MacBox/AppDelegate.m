@@ -43,7 +43,7 @@
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     [self removeUnwantedMenuItems];
     
-    //[self removeCopyDiagnosticDumpItem];
+    [self removeCopyDiagnosticDumpItem];
     
     if(![Settings sharedInstance].fullVersion) {
         [self getValidIapProducts];
