@@ -23,6 +23,10 @@
     NSMutableDictionary<NSValue *, UIImage *> *_iconsCache;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [self.navigationController.toolbar setHidden:self.existing];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
 

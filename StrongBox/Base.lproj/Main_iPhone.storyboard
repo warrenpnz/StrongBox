@@ -975,13 +975,13 @@
         <!--Safe Location-->
         <scene sceneID="2JC-hR-WYD">
             <objects>
-                <viewController id="Dsn-WA-Bfz" customClass="SelectSafeLocationViewController" sceneMemberID="viewController">
+                <viewController autoresizesArchivedViewToFullSize="NO" id="Dsn-WA-Bfz" customClass="SelectSafeLocationViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="wxl-gI-2Ph"/>
                         <viewControllerLayoutGuide type="bottom" id="it0-gM-dGy"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="26F-Hg-Pfb">
-                        <rect key="frame" x="0.0" y="64" width="375" height="559"/>
+                        <rect key="frame" x="0.0" y="64" width="375" height="603"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
                             <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Select where you would like to store your safe" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Abh-dh-usQ">
@@ -1030,6 +1030,7 @@
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </view>
                     <navigationItem key="navigationItem" title="Safe Location" id="cwZ-bS-WhK"/>
+                    <nil key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="buttonDropbox" destination="Jtl-Mb-Xes" id="VqI-tZ-sNr"/>
                         <outlet property="buttonGoogleDrive" destination="f6v-bY-KZ3" id="4Ym-sI-Kcs"/>
@@ -2031,7 +2032,7 @@ Cg
                     <tabBarItem key="tabBarItem" title="Safes" image="lock-24" id="qEb-5H-93x"/>
                     <toolbarItems/>
                     <nil key="simulatedBottomBarMetrics"/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" translucent="NO" id="vgj-1e-XZg">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" misplaced="YES" translucent="NO" id="vgj-1e-XZg">
                         <rect key="frame" x="0.0" y="0.0" width="1000" height="1000"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>

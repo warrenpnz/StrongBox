@@ -18,8 +18,10 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
 
+    [self.navigationController.toolbar setHidden:YES];
+    
     if (self.existing) {
-        self.uiLabelHelp.text = @"Select where your safe is stored";
+         self.uiLabelHelp.text = @"Select where your safe is stored";
     }
     else {
         self.uiLabelHelp.text = @"Select where you would like to store your new safe";
@@ -36,11 +38,9 @@
     self.buttonLocalDevice.hidden = self.existing;
     (self.buttonLocalDevice.imageView).contentMode = UIViewContentModeScaleAspectFit;
 
-    NSString *title = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? @"On this iPad" : @"On this iPhone";
+    NSString *title = @"On this device";
     [self.buttonLocalDevice setTitle:title forState:UIControlStateNormal];
     [self.buttonLocalDevice setTitle:title forState:UIControlStateHighlighted];
-
-    self.navigationController.toolbar.hidden = NO;
 }
 
 - (void)segueToBrowserOrAdd:(id<SafeStorageProvider>)provider {
