@@ -134,7 +134,7 @@
 
         SelectDestinationGroupController *vc = segue.destinationViewController;
 
-        vc.currentGroup = item.parent;
+        vc.currentGroup = item;
         vc.viewModel = self.viewModel;
         vc.itemsToMove = self.itemsToMove;
     }

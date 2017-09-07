@@ -408,22 +408,22 @@
 
 - (void)syncLastUpdateFieldsFromHeaders {
     Field *appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATETIME];
-    if(!appField) {
+    if(appField) {
         self.lastUpdateTime = appField.dataAsDate;
     }
 
     appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATEHOST];
-    if(!appField) {
+    if(appField) {
         self.lastUpdateHost = appField.dataAsString;
     }
 
     appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATEUSER];
-    if(!appField) {
+    if(appField) {
         self.lastUpdateUser = appField.dataAsString;
     }
     
     appField = [self getFirstHeaderFieldOfType:HDR_LASTUPDATEAPPLICATION];
-    if(!appField) {
+    if(appField) {
         self.lastUpdateApp = appField.dataAsString;
     }
 }

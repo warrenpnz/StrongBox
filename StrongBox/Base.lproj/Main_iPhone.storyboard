@@ -429,7 +429,7 @@
         <!--Password Settings-->
         <scene sceneID="cQN-AJ-ilu">
             <objects>
-                <tableViewController id="nJM-pW-a0b" customClass="PasswordSettingsTableViewController" sceneMemberID="viewController">
+                <tableViewController hidesBottomBarWhenPushed="YES" id="nJM-pW-a0b" customClass="PasswordSettingsTableViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="40" sectionFooterHeight="40" id="97n-BB-Qrj">
                         <rect key="frame" x="0.0" y="64" width="375" height="603"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -539,7 +539,7 @@
         <!--Preferences-->
         <scene sceneID="1nk-SD-liu">
             <objects>
-                <tableViewController id="gAY-yV-Xd6" customClass="PreferencesTableViewController" sceneMemberID="viewController">
+                <tableViewController hidesBottomBarWhenPushed="YES" id="gAY-yV-Xd6" customClass="PreferencesTableViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" bounces="NO" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="static" style="plain" separatorStyle="none" allowsSelection="NO" rowHeight="46" sectionHeaderHeight="30" sectionFooterHeight="30" id="yIU-Kp-eIB">
                         <rect key="frame" x="0.0" y="64" width="375" height="603"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -929,7 +929,7 @@
         <!--Previous Passwords-->
         <scene sceneID="vAL-RU-LOd">
             <objects>
-                <tableViewController title="Previous Passwords" id="0gq-Km-Qxj" userLabel="Previous Passwords" customClass="PreviousPasswordsTableViewController" sceneMemberID="viewController">
+                <tableViewController title="Previous Passwords" hidesBottomBarWhenPushed="YES" id="0gq-Km-Qxj" userLabel="Previous Passwords" customClass="PreviousPasswordsTableViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" allowsSelection="NO" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" id="C9A-sf-LKV">
                         <rect key="frame" x="0.0" y="64" width="375" height="603"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1316,7 +1316,7 @@
         <!--About-->
         <scene sceneID="BMA-yx-CBv">
             <objects>
-                <viewController id="Bzv-qW-qZx" sceneMemberID="viewController">
+                <viewController hidesBottomBarWhenPushed="YES" id="Bzv-qW-qZx" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="Gx4-TR-NtV"/>
                         <viewControllerLayoutGuide type="bottom" id="pE1-2V-Z4E"/>
@@ -2030,7 +2030,8 @@ Cg
                 <navigationController extendedLayoutIncludesOpaqueBars="YES" definesPresentationContext="YES" toolbarHidden="NO" id="waq-lN-OIc" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Safes" image="lock-24" id="qEb-5H-93x"/>
                     <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" misplaced="YES" translucent="NO" id="vgj-1e-XZg">
+                    <nil key="simulatedBottomBarMetrics"/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" translucent="NO" id="vgj-1e-XZg">
                         <rect key="frame" x="0.0" y="0.0" width="1000" height="1000"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>

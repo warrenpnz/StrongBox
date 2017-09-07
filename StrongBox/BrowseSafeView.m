@@ -196,6 +196,9 @@ static NSComparator searchResultsComparator = ^(id obj1, id obj2) {
             [self performSegueWithIdentifier:@"sequeToSubgroup" sender:item];
         }
     }
+    else {
+        [self enableDisableToolbarButtons];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -209,7 +212,7 @@ static NSComparator searchResultsComparator = ^(id obj1, id obj2) {
     
     (self.buttonAddRecord).enabled = !ro && !self.isEditing;
     (self.buttonSafeSettings).enabled = !self.isEditing;
-    (self.buttonMove).enabled = !ro && self.isEditing;      // Only move in edit mode
+    (self.buttonMove).enabled = !ro && self.isEditing && self.tableView.indexPathsForSelectedRows.count > 0;
     (self.buttonAddGroup).enabled = !ro && !self.isEditing;
 }
 

@@ -134,31 +134,49 @@
     return YES;
 }
 
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        SafeMetaData *safe = [self.safes get:indexPath.row];
-        
-        NSString *message = [NSString stringWithFormat:@"Are you sure you want to remove this safe from StrongBox?%@",
-                             safe.storageProvider == kLocalDevice ? @"" : @" (NB: The underlying safe data file will not be deleted)"];
-        
-        [Alerts yesNo:self
-                title:@"Are you sure?"
-              message:message
-               action:^(BOOL response) {
-                   if (response) {
-                       SafeMetaData *safe = [self.safes get:indexPath.row];
-                       
-                       [self cleanupSafeForRemoval:safe];
-                       [self.safes removeSafesAt:[NSIndexSet indexSetWithIndex:indexPath.row]];
-                       [self.safes save];
-                       
-                       dispatch_async(dispatch_get_main_queue(), ^(void) {
-                           [self setEditing:NO];
-                           [self refreshView];
-                       });
-                   }
-               }];
-    }
+- (nullable NSArray<UITableViewRowAction *> *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
+//    UITableViewRowAction *exportAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDefault title:@"Export" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+//        ;
+//    }];
+//    
+//    exportAction.backgroundColor = [UIColor yellowColor]; //colorWithRed:0.298 green:0.851 blue:0.3922 alpha:1.0];
+//    
+    UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:@"Delete" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+        [self deleteSafe:indexPath];
+    }];
+//
+//    UITableViewRowAction *migrateAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDefault title:@"Migrate" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+//        ;
+//    }];
+//    
+//    migrateAction.backgroundColor = [UIColor darkGrayColor]; //colorWithRed:0.298 green:0.851 blue:0.3922 alpha:1.0];
+    
+    return @[deleteAction]; //, migrateAction, exportAction];
+}
+
+- (void)deleteSafe:(NSIndexPath * _Nonnull)indexPath {
+    SafeMetaData *safe = [self.safes get:indexPath.row];
+    
+    NSString *message = [NSString stringWithFormat:@"Are you sure you want to remove this safe from StrongBox?%@",
+                         safe.storageProvider == kLocalDevice ? @"" : @" (NB: The underlying safe data file will not be deleted)"];
+    
+    [Alerts yesNo:self
+            title:@"Are you sure?"
+          message:message
+           action:^(BOOL response) {
+               if (response) {
+                   SafeMetaData *safe = [self.safes get:indexPath.row];
+                   
+                   [self cleanupSafeForRemoval:safe];
+                   [self.safes removeSafesAt:[NSIndexSet indexSetWithIndex:indexPath.row]];
+                   [self.safes save];
+                   
+                   dispatch_async(dispatch_get_main_queue(), ^(void) {
+                       [self setEditing:NO];
+                       [self refreshView];
+                   });
+               }
+           }];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
