@@ -29,7 +29,6 @@
                      storageProvider:(id <SafeStorageProvider>_Nonnull)provider
                    usingOfflineCache:(BOOL)usingOfflineCache
                           isReadOnly:(BOOL)isReadOnly
-                localStorageProvider:(LocalDeviceStorageProvider *_Nullable)local
                                safes:(SafesCollection *_Nonnull)safes NS_DESIGNATED_INITIALIZER;
 
 - (void)update:(void (^_Nonnull)(NSError * _Nullable error))handler;
@@ -37,7 +36,7 @@
 // Offline Cache Stuff
 
 - (void)updateOfflineCacheWithData:(NSData *_Nonnull)data;
-- (void)updateOfflineCache:(void (^_Nonnull)())handler;
+- (void)updateOfflineCache:(void (^_Nonnull)(void))handler;
 - (void)disableAndClearOfflineCache;
 - (void)enableOfflineCache;
 

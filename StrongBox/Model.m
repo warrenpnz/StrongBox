@@ -17,7 +17,6 @@
 
 @implementation Model {
     id <SafeStorageProvider> _storageProvider;
-    LocalDeviceStorageProvider *_local;
     BOOL _isUsingOfflineCache;
     BOOL _isReadOnly;
 }
@@ -27,7 +26,6 @@
                      storageProvider:(id <SafeStorageProvider>)provider
                    usingOfflineCache:(BOOL)usingOfflineCache
                           isReadOnly:(BOOL)isReadOnly
-                localStorageProvider:(LocalDeviceStorageProvider *)local
                                safes:(SafesCollection *)safes; {
     if (self = [super init]) {
         _passwordDatabase = passwordDatabase;
@@ -35,7 +33,6 @@
         _storageProvider = provider;
         _isUsingOfflineCache = usingOfflineCache;
         _isReadOnly = isReadOnly;
-        _local = local;
         _safes = safes;
 
         return self;
@@ -92,7 +89,7 @@
     }
 }
 
-- (void)updateOfflineCache:(void (^)())handler {
+- (void)updateOfflineCache:(void (^)(void))handler {
     if (self.isCloudBasedStorage && !self.isUsingOfflineCache && _metadata.offlineCacheEnabled) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void)
         {
@@ -102,7 +99,7 @@
             dispatch_async(dispatch_get_main_queue(), ^(void) {
                 if (updatedSafeData != nil && _metadata.offlineCacheEnabled) {
                     NSLog(@"Updating offline cache for safe.");
-                    [self saveOfflineCacheFile:updatedSafeData safe:_metadata localProvider:_local];
+                    [self saveOfflineCacheFile:updatedSafeData safe:_metadata];
                 }
 
                 handler();
@@ -114,20 +111,19 @@
 - (void)updateOfflineCacheWithData:(NSData *)data {
     if (self.isCloudBasedStorage && !self.isUsingOfflineCache && _metadata.offlineCacheEnabled) {
         NSLog(@"Updating offline cache for safe.");
-        [self saveOfflineCacheFile:data safe:_metadata localProvider:_local];
+        [self saveOfflineCacheFile:data safe:_metadata];
     }
 }
 
 - (void)saveOfflineCacheFile:(NSData *)data
-                        safe:(SafeMetaData *)safe
-               localProvider:(LocalDeviceStorageProvider *)localProvider {
+                        safe:(SafeMetaData *)safe {
     // Store this safe locally
     // Do we already have a file?
     //      Yes-> Overwrite
     //      No-> Create New & Set location
 
     if (safe.offlineCacheAvailable) {
-        [localProvider updateOfflineCachedSafe:safe
+        [[LocalDeviceStorageProvider sharedInstance] updateOfflineCachedSafe:safe
                                           data:data
                                 viewController:nil
                                     completion:^(NSError *error) {
@@ -140,7 +136,7 @@
 
         safe.offlineCacheFileIdentifier = [[NSUUID alloc] init].UUIDString;
 
-        [localProvider create:safe.offlineCacheFileIdentifier
+        [[LocalDeviceStorageProvider sharedInstance] create:safe.offlineCacheFileIdentifier
                          data:data
                  parentFolder:nil
                viewController:nil
@@ -167,7 +163,7 @@
 }
 
 - (void)disableAndClearOfflineCache {
-    [_local deleteOfflineCachedSafe:_metadata
+    [[LocalDeviceStorageProvider sharedInstance] deleteOfflineCachedSafe:_metadata
                          completion:^(NSError *error) {
                              _metadata.offlineCacheEnabled = NO;
                              _metadata.offlineCacheAvailable = NO;

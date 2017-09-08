@@ -11,7 +11,6 @@
 #import "BrowseSafeView.h"
 #import "GTMOAuth2ViewControllerTouch.h"
 #import "GoogleDriveManager.h"
-#import "SelectSafeLocationViewController.h"
 #import "IOsUtils.h"
 #import "Utils.h"
 #import <LocalAuthentication/LocalAuthentication.h>
@@ -25,6 +24,7 @@
 #import "UpgradeViewController.h"
 #import "Settings.h"
 #import <SVProgressHUD/SVProgressHUD.h>
+#import "SelectStorageProviderController.h"
 
 #define kTouchId911Limit 5
 
@@ -33,9 +33,6 @@
 @property (nonatomic, strong) SafesCollection *safes;
 @property (nonatomic, strong) SKProductsRequest *productsRequest;
 @property (nonatomic, strong) NSArray<SKProduct *> *validProducts;
-@property (nonatomic, strong) GoogleDriveStorageProvider *google;
-@property (nonatomic, strong) DropboxV2StorageProvider *dropbox;
-@property (nonatomic, strong) LocalDeviceStorageProvider *local;
 @property (nonatomic) BOOL touchId911;
 
 @end
@@ -49,7 +46,8 @@
     
     self.navigationController.navigationBar.hidden = NO;
     self.navigationItem.hidesBackButton = YES;
-
+    [self.navigationItem setPrompt:nil];
+    
     [self bindProOrFreeTrialUi];
 }
 
@@ -62,9 +60,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.google = [[GoogleDriveStorageProvider alloc] init];
-    self.dropbox = [[DropboxV2StorageProvider alloc] init];
-    self.local = [[LocalDeviceStorageProvider alloc] init];
+    [[Settings sharedInstance] setPro:NO];
+    
+    
     
     [[Settings sharedInstance] startMonitoringConnectivitity];
     
@@ -202,7 +200,7 @@
 
 - (void)cleanupSafeForRemoval:(SafeMetaData *)safe {
     if (safe.storageProvider == kLocalDevice) {
-        [self.local delete:safe
+        [[LocalDeviceStorageProvider sharedInstance] delete:safe
                 completion:^(NSError *error) {
                     if (error != nil) {
                         NSLog(@"Error removing local file: %@", error);
@@ -214,7 +212,7 @@
     }
     else if (safe.offlineCacheEnabled && safe.offlineCacheAvailable)
     {
-        [self.local deleteOfflineCachedSafe:safe
+        [[LocalDeviceStorageProvider sharedInstance] deleteOfflineCachedSafe:safe
                                  completion:^(NSError *error) {
                                      //NSLog(@"Delete Offline Cache File. Error = %@", error);
                                  }];
@@ -245,15 +243,15 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
     id <SafeStorageProvider> provider;
     
     if (safe.storageProvider == kGoogleDrive) {
-        provider = self.google;
+        provider = [GoogleDriveStorageProvider sharedInstance];
     }
     else if (safe.storageProvider == kDropbox)
     {
-        provider = self.dropbox;
+        provider = [DropboxV2StorageProvider sharedInstance];
     }
     else if (safe.storageProvider == kLocalDevice)
     {
-        provider = self.local;
+        provider = [LocalDeviceStorageProvider sharedInstance];
     }
     
     // Are we offline for cloud based providers?
@@ -262,7 +260,7 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
         [[Settings sharedInstance] isOffline] &&
         safe.offlineCacheEnabled &&
         safe.offlineCacheAvailable) {
-        NSDate *modDate = [self.local getOfflineCacheFileModificationDate:safe];
+        NSDate *modDate = [[LocalDeviceStorageProvider sharedInstance] getOfflineCacheFileModificationDate:safe];
         
         NSDateFormatter *df = [[NSDateFormatter alloc] init];
         df.dateFormat = @"dd-MMM-yyyy HH:mm:ss";
@@ -276,7 +274,7 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
                    if (response) {
                        NSLog(@"Reading offline cache with file id: %@", safe.offlineCacheFileIdentifier);
                        
-                       [self.local readOfflineCachedSafe:safe
+                       [[LocalDeviceStorageProvider sharedInstance] readOfflineCachedSafe:safe
                                       viewController:self
                                           completion:^(NSData *data, NSError *error)
                         {
@@ -418,7 +416,6 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
                                            storageProvider:isOfflineCacheMode ? nil : provider // Guarantee nothing can be written!
                                          usingOfflineCache:isOfflineCacheMode
                                                 isReadOnly:NO // ![[Settings sharedInstance] isProOrFreeTrial]
-                                      localStorageProvider:self.local
                                                      safes:self.safes];
 
     if (safe.offlineCacheEnabled) {
@@ -438,14 +435,11 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
     }
     else if ([segue.identifier isEqualToString:@"segueToStorageType"])
     {
-        SelectSafeLocationViewController *vc = segue.destinationViewController;
+        SelectStorageProviderController *vc = segue.destinationViewController;
         
         NSString *newOrExisting = (NSString *)sender;
         vc.existing = [newOrExisting isEqualToString:@"Existing"];
         vc.safes = self.safes;
-        vc.googleStorageProvider = self.google;
-        vc.localDeviceStorageProvider = self.local;
-        vc.dropboxStorageProvider = self.dropbox;
     }
     else if ([segue.identifier isEqualToString:@"segueToUpgrade"]) {
         UpgradeViewController* vc = segue.destinationViewController;
@@ -654,7 +648,7 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
 }
 
 - (void)addImportedSafe:(NSString *)nickName data:(NSData *)data {
-    [self.local create:nickName
+    [[LocalDeviceStorageProvider sharedInstance] create:nickName
               data:data
       parentFolder:nil
     viewController:self

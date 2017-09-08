@@ -321,14 +321,14 @@ NSString * trim(NSString *string) {
 
 - (void)hideOrShowPassword:(BOOL)hide {
     if (hide) {
+        [self.textFieldPassword setTextColor:[UIColor clearColor]];
         [self.buttonHidePassword setTitle:@"Show" forState:UIControlStateNormal];
-        (self.labelHidePassword).textColor = [UIColor darkGrayColor];
-        (self.textFieldPassword).textColor = [UIColor clearColor];
+        [self.labelHidePassword setHidden:NO];
     }
     else {
+        [self.textFieldPassword setTextColor:[UIColor purpleColor]];
         [self.buttonHidePassword setTitle:@"Hide" forState:UIControlStateNormal];
-        (self.labelHidePassword).textColor = [UIColor clearColor];
-        (self.textFieldPassword).textColor = [UIColor purpleColor];
+        [self.labelHidePassword setHidden:YES];
     }
 }
 
