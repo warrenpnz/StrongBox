@@ -648,17 +648,6 @@ DQ
                                                                                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                                         </textFieldCell>
                                                                                     </textField>
-                                                                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bPJ-2i-Tvq">
-                                                                                        <rect key="frame" x="80" y="360" width="312" height="22"/>
-                                                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="JpM-BB-gSE">
-                                                                                            <font key="font" metaFont="system"/>
-                                                                                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
-                                                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                                                        </textFieldCell>
-                                                                                        <connections>
-                                                                                            <outlet property="delegate" destination="5gI-5U-AMq" id="cGC-rs-AiN"/>
-                                                                                        </connections>
-                                                                                    </textField>
                                                                                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xOJ-qD-vsy">
                                                                                         <rect key="frame" x="47" y="326" width="31" height="17"/>
                                                                                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="URL" id="Eir-U9-NOh">
@@ -771,41 +760,49 @@ DQ
                                                                                             <autoresizingMask key="autoresizingMask"/>
                                                                                         </scroller>
                                                                                     </scrollView>
+                                                                                    <comboBox verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Lce-Qc-DOm">
+                                                                                        <rect key="frame" x="80" y="359" width="315" height="26"/>
+                                                                                        <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" numberOfVisibleItems="5" id="3Dg-D1-KYg">
+                                                                                            <font key="font" metaFont="system"/>
+                                                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                                        </comboBoxCell>
+                                                                                    </comboBox>
                                                                                 </subviews>
                                                                                 <constraints>
                                                                                     <constraint firstItem="8vG-fA-yRR" firstAttribute="top" secondItem="eSx-uM-hGi" secondAttribute="bottom" constant="40" id="04u-PC-XLc"/>
-                                                                                    <constraint firstItem="uzj-Tf-qNa" firstAttribute="baseline" secondItem="bPJ-2i-Tvq" secondAttribute="baseline" id="05n-BP-mCY"/>
-                                                                                    <constraint firstItem="XMG-gg-AIl" firstAttribute="trailing" secondItem="bPJ-2i-Tvq" secondAttribute="trailing" id="3Md-o9-1cI"/>
+                                                                                    <constraint firstItem="Lce-Qc-DOm" firstAttribute="leading" secondItem="uzj-Tf-qNa" secondAttribute="trailing" constant="4" id="2l5-hj-tVB"/>
                                                                                     <constraint firstItem="vgA-Bj-Esc" firstAttribute="top" secondItem="OYc-uL-jAE" secondAttribute="top" constant="20" symbolic="YES" id="3UV-xJ-zeI"/>
                                                                                     <constraint firstItem="LJc-Iz-DyC" firstAttribute="trailing" secondItem="eSx-uM-hGi" secondAttribute="trailing" id="5NY-A8-j2y"/>
-                                                                                    <constraint firstItem="bPJ-2i-Tvq" firstAttribute="leading" secondItem="uzj-Tf-qNa" secondAttribute="trailing" constant="4" id="5Tq-UJ-zSH"/>
                                                                                     <constraint firstItem="xOJ-qD-vsy" firstAttribute="baseline" secondItem="XMG-gg-AIl" secondAttribute="baseline" id="ASJ-OE-up2"/>
                                                                                     <constraint firstAttribute="trailing" secondItem="nwU-ra-Y09" secondAttribute="trailing" constant="20" symbolic="YES" id="DFc-be-fU7"/>
                                                                                     <constraint firstItem="sgy-hr-agE" firstAttribute="leading" secondItem="OYc-uL-jAE" secondAttribute="leading" constant="10" id="FmL-sQ-bEd"/>
                                                                                     <constraint firstAttribute="trailing" secondItem="sgy-hr-agE" secondAttribute="trailing" constant="20" symbolic="YES" id="J1O-VC-IiR"/>
                                                                                     <constraint firstItem="eSx-uM-hGi" firstAttribute="leading" secondItem="XMG-gg-AIl" secondAttribute="leading" id="J9A-1d-ggN"/>
                                                                                     <constraint firstItem="vgA-Bj-Esc" firstAttribute="leading" secondItem="43q-4M-4ro" secondAttribute="trailing" constant="4" id="JOw-ev-h0f"/>
-                                                                                    <constraint firstItem="XMG-gg-AIl" firstAttribute="leading" secondItem="bPJ-2i-Tvq" secondAttribute="leading" id="NlN-nT-6CI"/>
                                                                                     <constraint firstItem="LJc-Iz-DyC" firstAttribute="top" secondItem="eSx-uM-hGi" secondAttribute="bottom" constant="3" id="QNX-ow-p6k"/>
                                                                                     <constraint firstItem="51L-Cu-Tku" firstAttribute="centerX" secondItem="eSx-uM-hGi" secondAttribute="centerX" id="S7x-S3-o9a"/>
                                                                                     <constraint firstItem="Be1-bi-AEZ" firstAttribute="baseline" secondItem="eSx-uM-hGi" secondAttribute="baseline" id="SwH-hn-m1U"/>
-                                                                                    <constraint firstItem="bPJ-2i-Tvq" firstAttribute="leading" secondItem="vgA-Bj-Esc" secondAttribute="leading" id="TTY-Hg-RqY"/>
+                                                                                    <constraint firstItem="xOJ-qD-vsy" firstAttribute="top" secondItem="uzj-Tf-qNa" secondAttribute="bottom" constant="20" id="UJa-Px-6dv"/>
                                                                                     <constraint firstItem="eSx-uM-hGi" firstAttribute="leading" secondItem="Be1-bi-AEZ" secondAttribute="trailing" constant="4" id="WWg-JV-C6f"/>
                                                                                     <constraint firstAttribute="trailing" secondItem="vgA-Bj-Esc" secondAttribute="trailing" constant="20" symbolic="YES" id="Zbd-vc-ExD"/>
                                                                                     <constraint firstAttribute="bottom" secondItem="sgy-hr-agE" secondAttribute="bottom" constant="2" id="avJ-kI-kok"/>
                                                                                     <constraint firstItem="vgA-Bj-Esc" firstAttribute="baseline" secondItem="43q-4M-4ro" secondAttribute="baseline" id="cW2-B8-1yh"/>
-                                                                                    <constraint firstItem="bPJ-2i-Tvq" firstAttribute="top" secondItem="vgA-Bj-Esc" secondAttribute="bottom" constant="15" id="hGI-mQ-nQP"/>
-                                                                                    <constraint firstItem="XMG-gg-AIl" firstAttribute="top" secondItem="bPJ-2i-Tvq" secondAttribute="bottom" constant="15" id="jFo-OZ-fR2"/>
+                                                                                    <constraint firstItem="Lce-Qc-DOm" firstAttribute="leading" secondItem="vgA-Bj-Esc" secondAttribute="leading" id="ezz-uB-dgM"/>
+                                                                                    <constraint firstItem="Lce-Qc-DOm" firstAttribute="trailing" secondItem="vgA-Bj-Esc" secondAttribute="trailing" id="h3V-Yw-LBe"/>
                                                                                     <constraint firstItem="8vG-fA-yRR" firstAttribute="centerX" secondItem="OYc-uL-jAE" secondAttribute="centerX" id="lZ6-oE-3F0"/>
+                                                                                    <constraint firstItem="uzj-Tf-qNa" firstAttribute="top" secondItem="43q-4M-4ro" secondAttribute="bottom" constant="20" id="o5f-Tk-6xv"/>
                                                                                     <constraint firstItem="XMG-gg-AIl" firstAttribute="leading" secondItem="xOJ-qD-vsy" secondAttribute="trailing" constant="4" id="q8X-Za-pnM"/>
+                                                                                    <constraint firstItem="XMG-gg-AIl" firstAttribute="trailing" secondItem="Lce-Qc-DOm" secondAttribute="trailing" id="qKm-Fz-3IW"/>
+                                                                                    <constraint firstItem="XMG-gg-AIl" firstAttribute="leading" secondItem="Lce-Qc-DOm" secondAttribute="leading" id="qhY-xW-FaP"/>
                                                                                     <constraint firstItem="eSx-uM-hGi" firstAttribute="top" secondItem="51L-Cu-Tku" secondAttribute="bottom" id="rBF-LY-53l"/>
                                                                                     <constraint firstItem="vgA-Bj-Esc" firstAttribute="leading" secondItem="OYc-uL-jAE" secondAttribute="leading" constant="80" id="rGK-pK-Orn"/>
-                                                                                    <constraint firstItem="bPJ-2i-Tvq" firstAttribute="trailing" secondItem="vgA-Bj-Esc" secondAttribute="trailing" id="rg7-es-TFa"/>
                                                                                     <constraint firstItem="nwU-ra-Y09" firstAttribute="leading" secondItem="OYc-uL-jAE" secondAttribute="leading" constant="10" id="tGE-9U-yRJ"/>
                                                                                     <constraint firstItem="eSx-uM-hGi" firstAttribute="trailing" secondItem="XMG-gg-AIl" secondAttribute="trailing" id="tws-G9-mrD"/>
                                                                                     <constraint firstItem="51L-Cu-Tku" firstAttribute="top" secondItem="XMG-gg-AIl" secondAttribute="bottom" constant="15" id="vDT-TV-geO"/>
                                                                                     <constraint firstItem="nwU-ra-Y09" firstAttribute="top" secondItem="8vG-fA-yRR" secondAttribute="bottom" constant="4" id="vNq-Rz-ouK"/>
                                                                                     <constraint firstItem="sgy-hr-agE" firstAttribute="top" secondItem="nwU-ra-Y09" secondAttribute="bottom" constant="10" id="wns-4G-7Or"/>
+                                                                                    <constraint firstItem="Lce-Qc-DOm" firstAttribute="baseline" secondItem="uzj-Tf-qNa" secondAttribute="baseline" id="z9L-BL-TSC"/>
                                                                                 </constraints>
                                                                             </view>
                                                                         </tabViewItem>
@@ -1396,7 +1393,6 @@ DQ
                         <outlet property="textFieldSummaryTitle" destination="p16-z3-Ie6" id="J8l-vh-Ice"/>
                         <outlet property="textFieldTitle" destination="vgA-Bj-Esc" id="YC7-Hd-B4F"/>
                         <outlet property="textFieldUrl" destination="XMG-gg-AIl" id="za7-i9-89k"/>
-                        <outlet property="textFieldUsername" destination="bPJ-2i-Tvq" id="RxU-UK-5s8"/>
                         <outlet property="textViewNotes" destination="R2W-LK-2el" id="vrS-ua-7el"/>
                     </connections>
                 </viewController>
