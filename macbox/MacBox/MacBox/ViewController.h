@@ -20,6 +20,8 @@
 @property (weak) IBOutlet NSTabView *tabViewLockUnlock;
 @property (weak) IBOutlet NSTabView *tabViewRightPane;
 @property (weak) IBOutlet NSTextField *labelLeftStatus;
+@property (weak) IBOutlet NSButton *buttonCreateGroup;
+@property (weak) IBOutlet NSButton *buttonCreateRecord;
 
 // Locked Fields
 
@@ -56,6 +58,10 @@
 @property (weak) IBOutlet NSTextField *textFieldSafeSummaryGroups;
 @property (weak) IBOutlet NSTextField *textFieldSafeSummaryKeyStretchIterations;
 @property (weak) IBOutlet NSTextField *textFieldSafeSummaryVersion;
+@property (weak) IBOutlet NSTextField *textFieldSafeSummaryLastUpdateUser;
+@property (weak) IBOutlet NSTextField *textFieldSafeSummaryLastUpdateHost;
+@property (weak) IBOutlet NSTextField *textFieldSafeSummaryLastUpdateApp;
+@property (weak) IBOutlet NSTextField *textFieldSafeSummaryLastUpdateTime;
 
 // Group View Fields
 

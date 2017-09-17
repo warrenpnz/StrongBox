@@ -298,7 +298,7 @@
 }
 
 - (void)outlineViewSelectionDidChange:(NSNotification *)notification {
-    //NSLog(@"Selection Change Outline View");
+    NSLog(@"Selection Change Outline View");
     Node* item =  [self getCurrentSelectedItem];
     
     self.hiddenPasswordTemporaryStore = item == nil || item.isGroup ? nil : item.fields.password;
@@ -401,13 +401,19 @@
     [self.outlineView reloadData];
     
     if( self.searchField.stringValue.length > 0) {
+        self.buttonCreateGroup.enabled = NO;
+        self.buttonCreateRecord.enabled = NO;
         [self.outlineView expandItem:nil expandChildren:YES];
     }
     else {
+        self.buttonCreateGroup.enabled = YES;
+        self.buttonCreateRecord.enabled = YES;
         [self.outlineView collapseItem:nil collapseChildren:YES];
     }
     
     [self.outlineView selectRowIndexes: [NSIndexSet indexSetWithIndex: 0] byExtendingSelection: NO];
+
+    [self bindDetailsPane];
 }
 
 - (IBAction)onCheckboxRevealDetailsImmediately:(id)sender {
@@ -476,8 +482,6 @@
 }
 
 - (void)textDidChange:(NSNotification *)notification {
-    //NSLog(@"textDidChange");
-    
     if(self.model.locked) { // Can happen when user hits Lock in middle of edit...
         return;
     }
@@ -485,20 +489,9 @@
     Node* item = [self getCurrentSelectedItem];
     if(notification.object == self.textViewNotes &&
        ![item.fields.notes isEqualToString:self.textViewNotes.textStorage.string]) {
-        //NSLog(@"Notes Changed");
         [self.model setItemNotes:item notes:self.textViewNotes.textStorage.string];
     }
 }
-
-// Old code for when edit ends and user tabs out
-//- (IBAction)onTextEdited:(id)sender {
-//    //NSLog(@"onTextEdited");
-//    //[self onDetailFieldChange:sender];
-//}
-//
-//- (void)textDidEndEditing:(NSNotification *)notification {
-//
-//}
 
 - (IBAction)onDetailFieldChange:(id)sender {
     if(self.model.locked) { // Can happen when user hits Lock in middle of edit...
@@ -506,37 +499,43 @@
     }
     
     Node* item = [self getCurrentSelectedItem];
+    BOOL recordChanged = NO;
     
     if(sender == self.textFieldTitle) {
         if(![item.title isEqualToString:trimField(self.textFieldTitle)]) {
-            //NSLog(@"Title Changed!");
             [self.model setItemTitle:item title:trimField(self.textFieldTitle)];
             
             NSInteger row = [self.outlineView selectedRow];
             [self.outlineView reloadDataForRowIndexes:[NSIndexSet indexSetWithIndex:row] columnIndexes:[NSIndexSet indexSetWithIndex:0]];
-            // self.textFieldTitle.stringValue = trimField(self.textFieldTitle);
+        
+            recordChanged = YES;
         }
     }
     else if(sender == self.textFieldUsername) {
         if(![item.fields.username isEqualToString:trimField(self.textFieldUsername)]) {
-            //NSLog(@"Username Changed!");
             [self.model setItemUsername:item username:trimField(self.textFieldUsername)];
-            // self.textFieldUsername.stringValue = trimField(self.textFieldUsername);
+        
+            recordChanged = YES;
         }
     }
     else if(sender == self.textFieldUrl) {
         if(![item.fields.url isEqualToString:trimField(self.textFieldUrl)]) {
-            //NSLog(@"Url Changed!");
             [self.model setItemUrl:item url:trimField(self.textFieldUrl)];
-            // self.textFieldUrl.stringValue = trimField(self.textFieldUrl);
+        
+            recordChanged = YES;
         }
     }
     else if(sender == self.textFieldPw) {
         if(![item.fields.password isEqualToString:trimField(self.textFieldPw)]) {
-            //NSLog(@"Password Changed!");
             [self.model setItemPassword:item password:trimField(self.textFieldPw)];
-            // self.textFieldPw.stringValue = trimField(self.textFieldPw);
+        
+            recordChanged = YES;
         }
+    }
+    
+    if(recordChanged) {
+        item.fields.accessed = [[NSDate alloc] init];
+        item.fields.modified = [[NSDate alloc] init];
     }
 }
 
@@ -749,7 +748,18 @@ NSString* trim(NSString* str) {
 }
 
 - (IBAction)onLaunchUrl:(id)sender {
-    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:self.textFieldUrl.stringValue]];
+    NSString *urlString = self.textFieldUrl.stringValue;
+    
+    if (!urlString.length) {
+        return;
+    }
+    
+    if (![urlString.lowercaseString hasPrefix:@"http://"] &&
+        ![urlString.lowercaseString hasPrefix:@"https://"]) {
+        urlString = [NSString stringWithFormat:@"http://%@", urlString];
+    }
+    
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:urlString]];
 }
 
 - (IBAction)onCopyPasswordAndLaunchUrl:(id)sender {
@@ -778,9 +788,11 @@ NSString* trim(NSString* str) {
     if (theAction == @selector(onDelete:)) {
         return item != nil;
     }
+    else if(theAction == @selector(onCreateGroup:) ||
+            theAction == @selector(onCreateRecord:)) {
+        return self.model && !self.model.locked && self.searchField.stringValue.length == 0;
+    }
     else if (theAction == @selector(onChangeMasterPassword:) ||
-             theAction == @selector(onCreateGroup:) ||
-             theAction == @selector(onCreateRecord:) ||
              theAction == @selector(onLock:)) {
         return self.model && !self.model.locked;
     }
@@ -832,6 +844,27 @@ NSString* trim(NSString* str) {
     self.textFieldSafeSummaryGroups.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.numberOfGroups];
     self.textFieldSafeSummaryKeyStretchIterations.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.keyStretchIterations];
     self.textFieldSafeSummaryVersion.stringValue = self.model.version ? self.model.version : @"<Unknown>";
+    
+    self.textFieldSafeSummaryLastUpdateUser.stringValue = self.model.lastUpdateUser ? self.model.lastUpdateUser : @"<Unknown>";
+    self.textFieldSafeSummaryLastUpdateHost.stringValue = self.model.lastUpdateHost ? self.model.lastUpdateHost : @"<Unknown>";
+    self.textFieldSafeSummaryLastUpdateApp.stringValue = self.model.lastUpdateApp ? self.model.lastUpdateApp : @"<Unknown>";
+    self.textFieldSafeSummaryLastUpdateTime.stringValue = [self formatDate:self.model.lastUpdateTime];
+}
+
+- (NSString *)formatDate:(NSDate *)date {
+    if (!date) {
+        return @"<Unknown>";
+    }
+    
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    
+    dateFormatter.dateStyle = NSDateFormatterMediumStyle;
+    dateFormatter.timeStyle = NSDateFormatterShortStyle;
+    dateFormatter.locale = [NSLocale currentLocale];
+    
+    NSString *dateString = [dateFormatter stringFromDate:date];
+    
+    return dateString;
 }
 
 @end
