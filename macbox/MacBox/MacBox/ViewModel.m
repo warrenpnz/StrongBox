@@ -261,4 +261,36 @@
     [self.passwordDatabase defaultLastUpdateFieldsToNow];
 }
 
+- (NSSet<NSString*> *)usernameSet {
+    return self.passwordDatabase.usernameSet;
+}
+
+- (NSSet<NSString*> *)passwordSet {
+    return self.passwordDatabase.passwordSet;
+}
+
+- (NSString *)mostPopularUsername {
+    return self.passwordDatabase.mostPopularUsername;
+}
+
+- (NSString *)mostPopularPassword {
+    return self.passwordDatabase.mostPopularPassword;
+}
+
+- (NSInteger)numberOfRecords {
+    return self.passwordDatabase.numberOfRecords;
+}
+
+- (NSInteger)numberOfGroups {
+    return self.passwordDatabase.numberOfGroups;
+}
+
+- (NSInteger)keyStretchIterations {
+    return self.passwordDatabase.keyStretchIterations;
+}
+
+- (NSString *)version {
+    return self.passwordDatabase.version;
+}
+
 @end

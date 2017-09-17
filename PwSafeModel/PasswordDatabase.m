@@ -22,6 +22,9 @@
 
 @implementation PasswordDatabase
 
+static const NSInteger kDefaultVersionMajor = 0x03;
+static const NSInteger kDefaultVersionMinor = 0x0B;
+
 + (BOOL)isAValidSafe:(NSData *)candidate {
     return [SafeTools isAValidSafe:candidate];
 }
@@ -33,7 +36,7 @@
 - (instancetype)initNewWithPassword:(NSString *)password {
     if (self = [super init]) {
         _dbHeaderFields = [[NSMutableArray alloc] init];
-
+        
         self.keyStretchIterations = DEFAULT_KEYSTRETCH_ITERATIONS;
         self.masterPassword = password;
         
@@ -236,8 +239,8 @@
     
     if(![self getFirstHeaderFieldOfType:HDR_VERSION]) {
         unsigned char versionBytes[2];
-        versionBytes[0] = 0x0B;
-        versionBytes[1] = 0x03;
+        versionBytes[0] = kDefaultVersionMinor;
+        versionBytes[1] = kDefaultVersionMajor;
         NSData *versionData = [[NSData alloc] initWithBytes:&versionBytes length:2];
         Field *version = [[Field alloc] initNewDbHeaderField:HDR_VERSION withData:versionData];
         [_dbHeaderFields addObject:version];
@@ -596,7 +599,7 @@
 -(NSString*)version {
     Field *version = [self getFirstHeaderFieldOfType:HDR_VERSION];
     if(!version) {
-        return @"<Not Set>";
+        return [NSString stringWithFormat:@"%ld.%ld", (long)kDefaultVersionMajor, (long)kDefaultVersionMinor];
     }
     else {
         return [version prettyDataString];
@@ -604,7 +607,7 @@
 }
 
 - (NSString*)mostFrequentInCountedSet:(NSCountedSet<NSString*>*)bag {
-    NSString *mostOccurring = @"";
+    NSString *mostOccurring = nil;
     NSUInteger highest = 0;
 
     for (NSString *s in bag) {

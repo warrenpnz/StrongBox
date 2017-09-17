@@ -49,7 +49,7 @@
 }
 
 - (void)customizeUi {
-    self.buttonRevealDetails.layer.cornerRadius = 20;
+    self.buttonRevealDetail.layer.cornerRadius = 20;
     self.checkboxRevealDetailsImmediately.state = [Settings sharedInstance].revealDetailsImmediately;
     
     [self.tabViewLockUnlock setTabViewType:NSNoTabsNoBorder];
@@ -90,15 +90,13 @@
 }
 
 -(void)updateDocumentUrl {
-    self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl : @"[Not Saved]"];
+    [self bindToModel];
 }
 
 - (void)bindToModel {
     if(self.model == nil) {
-        [self.tabViewLockUnlock selectTabViewItemAtIndex:1];
-        
+        [self.tabViewLockUnlock selectTabViewItemAtIndex:2];
         [self.outlineView reloadData];
-        
         return;
     }
     
@@ -110,14 +108,10 @@
     }
     
     [self.outlineView reloadData];
-
-    if([self.outlineView numberOfRows] > 0) {
-        [self.outlineView selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
-    }
     
     [self bindDetailsPane];
-
-    [self updateDocumentUrl];
+    
+    self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl : @"[Not Saved]"];
 }
 
 - (void)setInitialFocus {
@@ -132,31 +126,13 @@
 - (void)bindDetailsPane {
     Node* it = [self getCurrentSelectedItem];
     
-    if(!it) {
-        self.textFieldTitle.stringValue = @"";
-        self.textFieldPw.stringValue = @"";
-        self.textFieldUrl.stringValue = @"";
-        self.textFieldUsername.stringValue = @"";
-        self.textViewNotes.string = @"";
-        self.imageViewSummary.image = self.strongBox256Image;
-        self.textFieldSummaryTitle.stringValue= @"";
-        
-        [self.tabViewRightPane selectTabViewItemAtIndex:1];
-        self.stackViewRevealButton.hidden = YES;
+    if(!it) {        
+        [self.tabViewRightPane selectTabViewItemAtIndex:2];
+        [self updateSafeSummaryFields];
     }
     else if (it.isGroup) {
-        self.textFieldTitle.stringValue = @"";
-        self.textFieldPw.stringValue = @"";
-        self.textFieldUrl.stringValue = @"";
-        self.textFieldUsername.stringValue = @"";
-        self.textViewNotes.string = @"";
-        
-        self.imageViewSummary.image = self.folderImage;
-        self.textFieldSummaryTitle.stringValue = it.title;
-        
         [self.tabViewRightPane selectTabViewItemAtIndex:1];
-        
-        self.stackViewRevealButton.hidden = YES;
+        self.textFieldSummaryTitle.stringValue = it.title;
     }
     else {
         self.textFieldTitle.stringValue = it.title;
@@ -164,10 +140,8 @@
         self.textFieldUrl.stringValue = it.fields.url;
         self.textFieldUsername.stringValue = it.fields.username;
         self.textViewNotes.string = it.fields.notes;
-
-        self.imageViewSummary.image = self.strongBox256Image;
         self.textFieldSummaryTitle.stringValue = it.title;
-        
+
         if([Settings sharedInstance].revealDetailsImmediately) {
             [self revealDetails];
         }
@@ -188,12 +162,11 @@
 }
 
 - (void)revealDetails {
-        [self.tabViewRightPane selectTabViewItemAtIndex:0];
+    [self.tabViewRightPane selectTabViewItemAtIndex:0];
 }
 
 - (void)concealDetails {
-    [self.tabViewRightPane selectTabViewItemAtIndex:1];
-    self.stackViewRevealButton.hidden = NO;
+    [self.tabViewRightPane selectTabViewItemAtIndex:3];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item
@@ -848,6 +821,17 @@ NSString* trim(NSString* str) {
     self.textFieldPw.stringValue = [self.model generatePassword];
     
     [self onDetailFieldChange:self.textFieldPw];
+}
+
+- (void)updateSafeSummaryFields {
+    self.textFieldSafeSummaryPath.stringValue = self.model.fileUrl ? self.model.fileUrl.absoluteString : @"<Not Saved>";
+    self.testFieldSafeSummaryUniqueUsernames.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.usernameSet.count];
+    self.textFieldSafeSummaryUniquePasswords.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.passwordSet.count];
+    self.textFieldSafeSummaryMostPopularUsername.stringValue = self.model.mostPopularUsername ? self.model.mostPopularUsername : @"<None>";
+    self.textFieldSafeSummaryRecords.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.numberOfRecords];
+    self.textFieldSafeSummaryGroups.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.numberOfGroups];
+    self.textFieldSafeSummaryKeyStretchIterations.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.keyStretchIterations];
+    self.textFieldSafeSummaryVersion.stringValue = self.model.version ? self.model.version : @"<Unknown>";
 }
 
 @end
