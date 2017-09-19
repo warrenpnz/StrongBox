@@ -93,9 +93,13 @@
 }
 
 -(void)updateDocumentUrl {
-    self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl : @"[Not Saved]"];
+    [self bindStatusPane];
     
     [self bindDetailsPane];
+}
+
+- (NSString * _Nonnull)bindStatusPane {
+    return self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl.path : @"[Not Saved]"];
 }
 
 - (void)bindToModel {
@@ -116,7 +120,7 @@
     
     [self bindDetailsPane];
     
-    self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl : @"[Not Saved]"];
+    [self bindStatusPane];
 }
 
 - (void)setInitialFocus {
@@ -883,7 +887,7 @@ NSString* trimField(NSTextField* textField) {
 }
 
 - (void)updateSafeSummaryFields {
-    self.textFieldSafeSummaryPath.stringValue = self.model.fileUrl ? self.model.fileUrl.absoluteString : @"<Not Saved>";
+    self.textFieldSafeSummaryPath.stringValue = self.model.fileUrl ? self.model.fileUrl.path : @"<Not Saved>";
     self.testFieldSafeSummaryUniqueUsernames.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.usernameSet.count];
     self.textFieldSafeSummaryUniquePasswords.stringValue = [NSString stringWithFormat:@"%lu", (unsigned long)self.model.passwordSet.count];
     self.textFieldSafeSummaryMostPopularUsername.stringValue = self.model.mostPopularUsername ? self.model.mostPopularUsername : @"<None>";

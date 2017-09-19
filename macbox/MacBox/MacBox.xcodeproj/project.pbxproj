@@ -33,6 +33,7 @@
 		4DE92B741F49D0AA00282D98 /* PwSafeModelTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DE92B731F49D0AA00282D98 /* PwSafeModelTests.m */; };
 		4DEAEC291F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DEAEC271F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.m */; };
 		4DEAEC2A1F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4DEAEC281F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.xib */; };
+		4DEB21421F717AE3009E3729 /* NSAdvancedTextField.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DEB21411F717AE3009E3729 /* NSAdvancedTextField.m */; };
 		4DF59F561F30DB7A00D68BFE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DF59F551F30DB7A00D68BFE /* AppDelegate.m */; };
 		4DF59F591F30DB7A00D68BFE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DF59F581F30DB7A00D68BFE /* main.m */; };
 		4DF59F5C1F30DB7A00D68BFE /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DF59F5B1F30DB7A00D68BFE /* ViewController.m */; };
@@ -99,6 +100,8 @@
 		4DEAEC261F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChangeMasterPasswordWindowController.h; sourceTree = "<group>"; };
 		4DEAEC271F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChangeMasterPasswordWindowController.m; sourceTree = "<group>"; };
 		4DEAEC281F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ChangeMasterPasswordWindowController.xib; sourceTree = "<group>"; };
+		4DEB21401F717AE3009E3729 /* NSAdvancedTextField.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NSAdvancedTextField.h; sourceTree = "<group>"; };
+		4DEB21411F717AE3009E3729 /* NSAdvancedTextField.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NSAdvancedTextField.m; sourceTree = "<group>"; };
 		4DF59F511F30DB7A00D68BFE /* Strongbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Strongbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4DF59F541F30DB7A00D68BFE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		4DF59F551F30DB7A00D68BFE /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -230,6 +233,8 @@
 				4D60CC6B1F4C1627005B66B8 /* UpgradeWindowController.h */,
 				4D60CC6C1F4C1627005B66B8 /* UpgradeWindowController.m */,
 				4D60CC6D1F4C1627005B66B8 /* UpgradeWindowController.xib */,
+				4DEB21401F717AE3009E3729 /* NSAdvancedTextField.h */,
+				4DEB21411F717AE3009E3729 /* NSAdvancedTextField.m */,
 			);
 			path = MacBox;
 			sourceTree = "<group>";
@@ -384,6 +389,7 @@
 				4DEAEC291F3DDF61000CE3A6 /* ChangeMasterPasswordWindowController.m in Sources */,
 				4DF59F5C1F30DB7A00D68BFE /* ViewController.m in Sources */,
 				4D48C35B1F4AECBF0041A47E /* LockedSafeInfo.m in Sources */,
+				4DEB21421F717AE3009E3729 /* NSAdvancedTextField.m in Sources */,
 				4DF59F591F30DB7A00D68BFE /* main.m in Sources */,
 				4DF59F561F30DB7A00D68BFE /* AppDelegate.m in Sources */,
 				4DCA65AF1F4B45800078B962 /* DocumentController.m in Sources */,
