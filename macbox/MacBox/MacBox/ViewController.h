@@ -9,7 +9,7 @@
 #import <Cocoa/Cocoa.h>
 #import "ViewModel.h"
 
-@interface ViewController : NSViewController<NSOutlineViewDelegate, NSOutlineViewDataSource, NSTextViewDelegate>
+@interface ViewController : NSViewController<NSOutlineViewDelegate, NSOutlineViewDataSource, NSTextViewDelegate, NSComboBoxDataSource>
 
 @property (strong, nonatomic) ViewModel* model;
 -(void)updateDocumentUrl;
@@ -36,10 +36,10 @@
 @property (weak) IBOutlet NSButton *buttonShowHidePassword;
 
 @property (weak) IBOutlet NSTextField *textFieldTitle;
-@property (weak) IBOutlet NSTextField *textFieldUsername;
 @property (weak) IBOutlet NSTextField *textFieldUrl;
 @property (unsafe_unretained) IBOutlet NSTextView *textViewNotes;
 @property (weak) IBOutlet NSTextField *textFieldPw;
+@property (weak) IBOutlet NSComboBox *comboboxUsername;
 
 - (IBAction)onSearch:(id)sender;
 - (IBAction)onUnlock:(id)sender;

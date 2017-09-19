@@ -11,6 +11,7 @@
 #import "ChangeMasterPasswordWindowController.h"
 #import "Settings.h"
 #import "AppDelegate.h"
+#import "Utils.h"
 
 #define kDragAndDropUti @"com.markmcguill.strongbox.drag.and.drop.internal.uti"
 
@@ -54,6 +55,8 @@
     
     [self.tabViewLockUnlock setTabViewType:NSNoTabsNoBorder];
     [self.tabViewRightPane setTabViewType:NSNoTabsNoBorder];
+    
+    [self.comboboxUsername setDataSource:self];
 }
 
 - (void)loadUIImages {
@@ -90,7 +93,9 @@
 }
 
 -(void)updateDocumentUrl {
-    [self bindToModel];
+    self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl : @"[Not Saved]"];
+    
+    [self bindDetailsPane];
 }
 
 - (void)bindToModel {
@@ -138,7 +143,7 @@
         self.textFieldTitle.stringValue = it.title;
         self.textFieldPw.stringValue = it.fields.password;
         self.textFieldUrl.stringValue = it.fields.url;
-        self.textFieldUsername.stringValue = it.fields.username;
+        self.comboboxUsername.stringValue = it.fields.username;
         self.textViewNotes.string = it.fields.notes;
         self.textFieldSummaryTitle.stringValue = it.title;
 
@@ -223,11 +228,11 @@
     }
     
     return [parentGroup.children filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
-        return [self isSafeItemMatchesSearchCriteria:evaluatedObject];
+        return [self isSafeItemMatchesSearchCriteria:evaluatedObject recurse:YES];
     }]];
 }
 
-- (BOOL)isSafeItemMatchesSearchCriteria:(Node*)item {
+- (BOOL)isSafeItemMatchesSearchCriteria:(Node*)item recurse:(BOOL)recurse {
     NSString* searchText = self.searchField.stringValue;
     
     if(![searchText length]) {
@@ -258,7 +263,7 @@
     if([predicate evaluateWithObject:item]) {
         return YES;
     }
-    else if(item.isGroup) {
+    else if(item.isGroup && recurse) {
         for(Node* child in item.children) {
             if(child.isGroup) {
                 if([[self getSafeItems:child] count] > 0) {
@@ -266,7 +271,7 @@
                 }
             }
             else {
-                if([self isSafeItemMatchesSearchCriteria:child]) {
+                if([self isSafeItemMatchesSearchCriteria:child recurse:YES]) {
                     return YES;
                 }
             }
@@ -411,8 +416,17 @@
         [self.outlineView collapseItem:nil collapseChildren:YES];
     }
     
-    [self.outlineView selectRowIndexes: [NSIndexSet indexSetWithIndex: 0] byExtendingSelection: NO];
-
+    for(int i=0;i < [self.outlineView numberOfRows];i++) {
+        //NSLog(@"Searching: %d", i);
+        Node* node = [self.outlineView itemAtRow:i];
+        
+        if([self isSafeItemMatchesSearchCriteria:node recurse:NO]) {
+            //NSLog(@"Found: %@", node.title);
+            [self.outlineView selectRowIndexes: [NSIndexSet indexSetWithIndex: i] byExtendingSelection: NO];
+            break;
+        }
+    }
+    
     [self bindDetailsPane];
 }
 
@@ -447,7 +461,7 @@
 
 - (IBAction)onCopyUsername:(id)sender {
     [[NSPasteboard generalPasteboard] clearContents];
-    [[NSPasteboard generalPasteboard] setString:self.textFieldUsername.stringValue forType:NSStringPboardType];
+    [[NSPasteboard generalPasteboard] setString:self.comboboxUsername.stringValue forType:NSStringPboardType];
 }
 
 - (IBAction)onCopyUrl:(id)sender {
@@ -475,10 +489,39 @@
     return [self.outlineView itemAtRow:selectedRow];
 }
 
-- (IBAction)controlTextDidChange:(NSNotification *)obj
+- (NSInteger)numberOfItemsInComboBox:(NSComboBox *)aComboBox
 {
-    //NSLog(@"controlTextDidChange");
-    [self onDetailFieldChange:obj.object];
+    return [self getUsernameAutocompletes].count;
+}
+
+- (id)comboBox:(NSComboBox *)aComboBox objectValueForItemAtIndex:(NSInteger)index
+{
+    return [[self getUsernameAutocompletes] objectAtIndex:index];
+}
+
+- (NSArray<NSString*>*)getUsernameAutocompletes {
+    return [[self.model.usernameSet allObjects] sortedArrayUsingComparator:finderStringComparator];
+}
+
+- (void)comboBoxSelectionDidChange:(NSNotification *)notification{
+    if(self.model.locked) { // Can happen when user hits Lock in middle of edit...
+        return;
+    }
+    
+    //NSLog(@"comboBoxSelectionDidChange");
+
+    if(notification.object == self.comboboxUsername) {
+        NSString *strValue = [[self getUsernameAutocompletes] objectAtIndex:[notification.object indexOfSelectedItem]];
+        strValue = [Utils trim:strValue];
+        
+        Node* item = [self getCurrentSelectedItem];
+
+        if(![item.fields.username isEqualToString:strValue]) {
+            [self.model setItemUsername:item username:strValue];
+            item.fields.accessed = [[NSDate alloc] init];
+            item.fields.modified = [[NSDate alloc] init];
+        }
+    }
 }
 
 - (void)textDidChange:(NSNotification *)notification {
@@ -490,7 +533,15 @@
     if(notification.object == self.textViewNotes &&
        ![item.fields.notes isEqualToString:self.textViewNotes.textStorage.string]) {
         [self.model setItemNotes:item notes:self.textViewNotes.textStorage.string];
+        item.fields.accessed = [[NSDate alloc] init];
+        item.fields.modified = [[NSDate alloc] init];
     }
+}
+
+- (IBAction)controlTextDidChange:(NSNotification *)obj
+{
+    //NSLog(@"controlTextDidChange");
+    [self onDetailFieldChange:obj.object];
 }
 
 - (IBAction)onDetailFieldChange:(id)sender {
@@ -511,10 +562,10 @@
             recordChanged = YES;
         }
     }
-    else if(sender == self.textFieldUsername) {
-        if(![item.fields.username isEqualToString:trimField(self.textFieldUsername)]) {
-            [self.model setItemUsername:item username:trimField(self.textFieldUsername)];
-        
+    else if(sender == self.comboboxUsername) {
+        if(![item.fields.username isEqualToString:trimField(self.comboboxUsername)]) {
+            [self.model setItemUsername:item username:trimField(self.comboboxUsername)];
+
             recordChanged = YES;
         }
     }
@@ -566,11 +617,7 @@
 }
 
 NSString* trimField(NSTextField* textField) {
-    return trim(textField.stringValue);
-}
-
-NSString* trim(NSString* str) {
-    return [str stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    return [Utils trim:textField.stringValue];
 }
 
 - (void)expandParentsOfItem:(Node*)item {
@@ -808,7 +855,7 @@ NSString* trim(NSString* str) {
         return item && !item.isGroup && self.textFieldTitle.stringValue.length;
     }
     else if (theAction == @selector(onCopyUsername:)) {
-        return item && !item.isGroup && self.textFieldUsername.stringValue.length;
+        return item && !item.isGroup && self.comboboxUsername.stringValue.length;
     }
     else if (theAction == @selector(onCopyPasswordAndLaunchUrl:)) {
         NSString *password = self.showPassword ? self.textFieldPw.stringValue : self.hiddenPasswordTemporaryStore;
@@ -866,5 +913,25 @@ NSString* trim(NSString* str) {
     
     return dateString;
 }
+
+static NSComparator finderStringComparator = ^(id obj1, id obj2)
+{
+    NSString* string1 = obj1;
+    NSString* string2 = obj2;
+    
+    // Finder Like String Sort
+    // https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Strings/Articles/SearchingStrings.html#//apple_ref/doc/uid/20000149-SW1
+    
+    static NSStringCompareOptions comparisonOptions =
+    NSCaseInsensitiveSearch | NSNumericSearch |
+    NSWidthInsensitiveSearch | NSForcedOrderingSearch;
+    
+    NSRange string1Range = NSMakeRange(0, [string1 length]);
+    
+    return [string1 compare:string2
+                    options:comparisonOptions
+                      range:string1Range
+                     locale:[NSLocale currentLocale]];
+};
 
 @end

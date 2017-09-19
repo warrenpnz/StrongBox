@@ -521,7 +521,7 @@ DQ
                                                                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                                                                 <tableColumns>
-                                                                                    <tableColumn width="391.5" minWidth="40" maxWidth="1000" id="eZj-j7-ola">
+                                                                                    <tableColumn width="392" minWidth="40" maxWidth="1000" id="eZj-j7-ola">
                                                                                         <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border">
                                                                                             <font key="font" metaFont="smallSystem"/>
                                                                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -535,7 +535,7 @@ DQ
                                                                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES"/>
                                                                                         <prototypeCellViews>
                                                                                             <tableCellView identifier="CellIdentifier" id="QF9-4S-pXG">
-                                                                                                <rect key="frame" x="1" y="1" width="391" height="17"/>
+                                                                                                <rect key="frame" x="1" y="1" width="392" height="17"/>
                                                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                                                 <subviews>
                                                                                                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="E4R-3x-1YA">
@@ -546,7 +546,7 @@ DQ
                                                                                                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="NSActionTemplate" id="jUQ-Ss-oe1"/>
                                                                                                     </imageView>
                                                                                                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="oiG-DQ-Jwu">
-                                                                                                        <rect key="frame" x="25" y="0.0" width="366" height="17"/>
+                                                                                                        <rect key="frame" x="25" y="0.0" width="367" height="17"/>
                                                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" title="Table View Cell" id="c5y-Fb-dab">
                                                                                                             <font key="font" metaFont="system"/>
                                                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -762,11 +762,14 @@ DQ
                                                                                     </scrollView>
                                                                                     <comboBox verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Lce-Qc-DOm">
                                                                                         <rect key="frame" x="80" y="359" width="315" height="26"/>
-                                                                                        <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" numberOfVisibleItems="5" id="3Dg-D1-KYg">
+                                                                                        <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" usesDataSource="YES" numberOfVisibleItems="5" id="3Dg-D1-KYg">
                                                                                             <font key="font" metaFont="system"/>
                                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                                         </comboBoxCell>
+                                                                                        <connections>
+                                                                                            <outlet property="delegate" destination="5gI-5U-AMq" id="zdu-pM-fyR"/>
+                                                                                        </connections>
                                                                                     </comboBox>
                                                                                 </subviews>
                                                                                 <constraints>
@@ -1370,6 +1373,7 @@ DQ
                         <outlet property="buttonRevealDetail" destination="Qog-rh-kdt" id="9fG-YT-c4P"/>
                         <outlet property="buttonShowHidePassword" destination="51L-Cu-Tku" id="aXN-vV-Oue"/>
                         <outlet property="checkboxRevealDetailsImmediately" destination="hqH-vk-VIo" id="8TO-OF-6fH"/>
+                        <outlet property="comboboxUsername" destination="Lce-Qc-DOm" id="Prs-c9-MWq"/>
                         <outlet property="labelLeftStatus" destination="C8e-oa-o47" id="uyE-ai-3tu"/>
                         <outlet property="outlineView" destination="hwF-Mb-pXx" id="tqD-sc-dbD"/>
                         <outlet property="searchField" destination="pbj-27-Yn8" id="08z-KH-2mp"/>

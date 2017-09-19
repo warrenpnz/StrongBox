@@ -87,4 +87,8 @@
     return NSFullUserName();
 }
 
++(NSString *)trim:(NSString*)string {
+    return [string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+}
+
 @end

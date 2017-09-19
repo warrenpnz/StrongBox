@@ -23,7 +23,7 @@
 @implementation PasswordDatabase
 
 static const NSInteger kDefaultVersionMajor = 0x03;
-static const NSInteger kDefaultVersionMinor = 0x0B;
+static const NSInteger kDefaultVersionMinor = 0x0D;
 
 + (BOOL)isAValidSafe:(NSData *)candidate {
     return [SafeTools isAValidSafe:candidate];
@@ -550,7 +550,9 @@ static const NSInteger kDefaultVersionMinor = 0x0B;
     NSMutableSet<NSString*> *bag = [[NSMutableSet alloc]init];
 
     for (Node *recordNode in [self getAllRecords]) {
-        [bag addObject:recordNode.fields.username];
+        if ([Utils trim:recordNode.fields.username].length > 0) {
+            [bag addObject:recordNode.fields.username];
+        }
     }
 
     return bag;
@@ -560,7 +562,9 @@ static const NSInteger kDefaultVersionMinor = 0x0B;
     NSMutableSet<NSString*> *bag = [[NSMutableSet alloc]init];
 
     for (Node *record in [self getAllRecords]) {
-        [bag addObject:record.fields.password];
+        if ([Utils trim:record.fields.password].length > 0) {
+            [bag addObject:record.fields.password];
+        }
     }
 
     return bag;
