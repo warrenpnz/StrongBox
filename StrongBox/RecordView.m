@@ -384,7 +384,9 @@ NSString * trim(NSString *string) {
         
         vc.saveFunction = ^(PasswordHistory *changed, void (^onDone)(NSError *)) {
             self.record.fields.passwordHistory = changed;
-            
+            self.record.fields.accessed = [[NSDate alloc] init];
+            self.record.fields.modified = [[NSDate alloc] init];
+
             [self.viewModel update:^(NSError *error) {
                 dispatch_async(dispatch_get_main_queue(), ^(void) {
                     onDone(error);
