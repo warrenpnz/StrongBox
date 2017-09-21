@@ -26,6 +26,7 @@
 #import <SVProgressHUD/SVProgressHUD.h>
 #import "SelectStorageProviderController.h"
 #import <PopupDialog/PopupDialog-Swift.h>
+#import "AppleICloudProvider.h"
 
 #define kTouchId911Limit 5
 
@@ -158,11 +159,30 @@
     cell.textLabel.text = safe.nickName;
     cell.detailTextLabel.text = safe.fileName;
     
-    NSString *icon = safe.storageProvider == kGoogleDrive ? @"product32" : safe.storageProvider == kDropbox ? @"dropbox-blue-32x32-nologo" : @"phone";
-    
+    id<SafeStorageProvider> provider = [self getStorageProviderFromProviderId:safe.storageProvider];
+    NSString *icon = provider.icon;
     cell.imageView.image = [UIImage imageNamed:icon];
     
     return cell;
+}
+
+- (id<SafeStorageProvider>)getStorageProviderFromProviderId:(StorageProvider)providerId {
+    if (providerId == kGoogleDrive) {
+        return [GoogleDriveStorageProvider sharedInstance];
+    }
+    else if (providerId == kDropbox)
+    {
+        return [DropboxV2StorageProvider sharedInstance];
+    }
+    else if (providerId == kiCloud) {
+        return [AppleICloudProvider sharedInstance];
+    }
+    else if (providerId == kLocalDevice)
+    {
+        return [LocalDeviceStorageProvider sharedInstance];
+    }
+    
+    return nil;
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -277,19 +297,7 @@
      isTouchIdOpen:(BOOL)isTouchIdOpen
     masterPassword:(NSString *)masterPassword
 askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
-    id <SafeStorageProvider> provider;
-    
-    if (safe.storageProvider == kGoogleDrive) {
-        provider = [GoogleDriveStorageProvider sharedInstance];
-    }
-    else if (safe.storageProvider == kDropbox)
-    {
-        provider = [DropboxV2StorageProvider sharedInstance];
-    }
-    else if (safe.storageProvider == kLocalDevice)
-    {
-        provider = [LocalDeviceStorageProvider sharedInstance];
-    }
+    id <SafeStorageProvider> provider = [self getStorageProviderFromProviderId:safe.storageProvider];
     
     // Are we offline for cloud based providers?
     

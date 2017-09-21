@@ -65,8 +65,10 @@
 - (void)createOfflineCacheFile:(NSString *)uniqueIdentifier
                           data:(NSData *)data
                     completion:(void (^)(NSError *error))completion {
+    NSString *desiredFilename = [NSString stringWithFormat:@"%@-strongbox-offline-cache.dat", uniqueIdentifier];
+
     NSString *path = [[IOsUtils applicationDocumentsDirectory].path
-                      stringByAppendingPathComponent:uniqueIdentifier];
+                      stringByAppendingPathComponent:desiredFilename];
     
     [data writeToFile:path atomically:YES];
     

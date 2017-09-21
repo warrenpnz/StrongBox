@@ -48,6 +48,8 @@
 		4DA6335F1F62EDA5000A0E9D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4DA6335D1F62EAE1000A0E9D /* Main.storyboard */; };
 		4DBE5B391C8356C700C310BC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DBE5B381C8356C700C310BC /* AppDelegate.m */; };
 		4DC2D4141F39D8A90029DBFE /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4DC2D4131F39D8A90029DBFE /* Images.xcassets */; };
+		4DCF5FBC1F7294A800011756 /* PasswordSafeUIDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DCF5FBB1F7294A800011756 /* PasswordSafeUIDocument.m */; };
+		4DCF5FBF1F7299DD00011756 /* AppleICloudProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */; };
 		4DD59F541D3A5A7300F864ED /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D1757A21C8361D200E6356F /* main.m */; };
 		4DE229A21ED8A102000FDC3D /* DropboxV2StorageProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DE229A11ED8A102000FDC3D /* DropboxV2StorageProvider.m */; };
 		4DF631A01F69571B006C8F2C /* PasswordGenerationSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DF6319F1F69571B006C8F2C /* PasswordGenerationSettings.m */; };
@@ -141,6 +143,10 @@
 		4DBE5B381C8356C700C310BC /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		4DC2D4131F39D8A90029DBFE /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		4DC8DFF01EE19CE300F1F757 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		4DCF5FBA1F7294A800011756 /* PasswordSafeUIDocument.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PasswordSafeUIDocument.h; sourceTree = "<group>"; };
+		4DCF5FBB1F7294A800011756 /* PasswordSafeUIDocument.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PasswordSafeUIDocument.m; sourceTree = "<group>"; };
+		4DCF5FBD1F7299DD00011756 /* AppleICloudProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppleICloudProvider.h; sourceTree = "<group>"; };
+		4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppleICloudProvider.m; sourceTree = "<group>"; };
 		4DD59F731D3A6FC800F864ED /* secrets.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = secrets.h; sourceTree = "<group>"; };
 		4DE229A01ED8A102000FDC3D /* DropboxV2StorageProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DropboxV2StorageProvider.h; sourceTree = "<group>"; };
 		4DE229A11ED8A102000FDC3D /* DropboxV2StorageProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DropboxV2StorageProvider.m; sourceTree = "<group>"; };
@@ -223,6 +229,8 @@
 				4D1757AE1C8361D300E6356F /* SafeStorageProvider.m */,
 				4D40EEEF1ED878DB006532F8 /* StorageBrowserItem.h */,
 				4D40EEF01ED878DB006532F8 /* StorageBrowserItem.m */,
+				4DCF5FBD1F7299DD00011756 /* AppleICloudProvider.h */,
+				4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */,
 			);
 			name = StorageProviders;
 			sourceTree = "<group>";
@@ -238,6 +246,8 @@
 				4D0165331EDB2F9C00CCB8CF /* SafesCollection.m */,
 				4D0BA7D61F23B844009243C9 /* Settings.h */,
 				4D0BA7D71F23B844009243C9 /* Settings.m */,
+				4DCF5FBA1F7294A800011756 /* PasswordSafeUIDocument.h */,
+				4DCF5FBB1F7294A800011756 /* PasswordSafeUIDocument.m */,
 			);
 			name = Model;
 			sourceTree = "<group>";
@@ -519,9 +529,11 @@
 				4D3694DE1F54547100A82811 /* Utils.m in Sources */,
 				4D1757CD1C8361D300E6356F /* SafesViewController.m in Sources */,
 				4D915D7A1EDC4B77002615F6 /* Alerts.m in Sources */,
+				4DCF5FBC1F7294A800011756 /* PasswordSafeUIDocument.m in Sources */,
 				4D1757C11C8361D300E6356F /* GoogleDriveStorageProvider.m in Sources */,
 				4DE229A21ED8A102000FDC3D /* DropboxV2StorageProvider.m in Sources */,
 				4D40EEF11ED878DB006532F8 /* StorageBrowserItem.m in Sources */,
+				4DCF5FBF1F7299DD00011756 /* AppleICloudProvider.m in Sources */,
 				4D92C7F91F388D0900341A58 /* SafeTools.m in Sources */,
 				4D1757CE1C8361D300E6356F /* SelectDestinationGroupController.m in Sources */,
 				4D55F0D81EE2BFF400C43B26 /* TextFieldAutoSuggest.m in Sources */,

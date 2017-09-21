@@ -14,6 +14,7 @@ typedef NS_ENUM (unsigned int, StorageProvider) {
     kGoogleDrive,
     kDropbox,
     kLocalDevice,
+    kiCloud,
 };
 
 - (instancetype)initWithNickName:(NSString *)nickName
