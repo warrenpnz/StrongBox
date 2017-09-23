@@ -16,6 +16,7 @@
 #import "ObjectiveDropboxOfficial/ObjectiveDropboxOfficial.h"
 #import "GoogleDriveManager.h"
 #import "Settings.h"
+#import "AppleICloudProvider.h"
 
 @implementation AppDelegate {
     NSDate *enterBackgroundTime;
@@ -26,6 +27,8 @@
     [self initializeGoogleDrive];
 
     [self initializeDropbox];
+
+    [self initializeICloud];
 
     [[Settings sharedInstance] startMonitoringConnectivitity];
     
@@ -113,6 +116,10 @@
 
 - (void)initializeDropbox {
     [DBClientsManager setupWithAppKey:DROPBOX_APP_KEY];
+}
+
+- (void)initializeICloud {
+    [AppleICloudProvider sharedInstance];
 }
 
 

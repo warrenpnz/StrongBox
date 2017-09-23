@@ -12,6 +12,7 @@
 #import "UpgradeWindowController.h"
 #import "Alerts.h"
 #import "Utils.h"
+#import "Strongbox.h"
 
 //#define kIapFullVersionStoreId @"com.markmcguill.strongbox.test.consumable"
 #define kIapFullVersionStoreId @"com.markmcguill.strongbox.mac.pro"
@@ -60,7 +61,35 @@
         [self randomlyPromptForAppStoreReview];
     }
     
+    [self initializeiCloudAccessWithCompletion:^(BOOL available) {
+        ;
+    }];
+    
     self.applicationHasFinishedLaunching = YES;
+}
+
+
+// TODO: Add new private instance variable
+NSURL * _iCloudRoot;
+BOOL _iCloudAvailable;
+
+- (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        _iCloudRoot = [[NSFileManager defaultManager] URLForUbiquityContainerIdentifier:kStrongboxICloudContainerIdentifier];
+        
+        if (_iCloudRoot != nil) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSLog(@"iCloud available at: %@", _iCloudRoot);
+                completion(TRUE);
+            });
+        }
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSLog(@"iCloud not available");
+                completion(FALSE);
+            });
+        }
+    });
 }
 
 - (void)randomlyPromptForAppStoreReview {
