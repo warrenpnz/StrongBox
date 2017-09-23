@@ -918,24 +918,10 @@ NSString* trimField(NSTextField* textField) {
     return dateString;
 }
 
+
 static NSComparator finderStringComparator = ^(id obj1, id obj2)
 {
-    NSString* string1 = obj1;
-    NSString* string2 = obj2;
-    
-    // Finder Like String Sort
-    // https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Strings/Articles/SearchingStrings.html#//apple_ref/doc/uid/20000149-SW1
-    
-    static NSStringCompareOptions comparisonOptions =
-    NSCaseInsensitiveSearch | NSNumericSearch |
-    NSWidthInsensitiveSearch | NSForcedOrderingSearch;
-    
-    NSRange string1Range = NSMakeRange(0, [string1 length]);
-    
-    return [string1 compare:string2
-                    options:comparisonOptions
-                      range:string1Range
-                     locale:[NSLocale currentLocale]];
+    return [Utils finderStringCompare:obj1 string2:obj2];
 };
 
 @end

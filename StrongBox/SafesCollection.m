@@ -8,6 +8,7 @@
 
 #import "SafesCollection.h"
 #import "SafeMetaData.h"
+#import "Utils.h"
 
 @interface SafesCollection ()
 
@@ -48,15 +49,18 @@
 }
 
 - (NSArray<SafeMetaData*>*)safes {
-    return self.mutableSafes;
+    return [self.mutableSafes sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
+        NSString* str1 = ((SafeMetaData*)obj1).nickName;
+        NSString* str2 = ((SafeMetaData*)obj2).nickName;
+        
+        return [Utils finderStringCompare:str1 string2:str2];
+    }];
 }
 
-- (void)removeSafesAt:(NSIndexSet *)index {
-    return [self.mutableSafes removeObjectsAtIndexes:index];
-}
+- (void)removeSafe:(SafeMetaData *)safe {
+    [self.mutableSafes removeObject:safe];
 
-- (void)removeAt:(NSUInteger)index {
-    return [self.mutableSafes removeObjectAtIndex:index];
+    [self save];
 }
 
 - (NSSet *)getAllNickNamesLowerCase {
@@ -69,13 +73,13 @@
     return set;
 }
 
-- (void)add:(SafeMetaData *)newSafe {
-    if (![self isValidNickName:newSafe.nickName]) {
+- (void)add:(SafeMetaData *)safe {
+    if (![self isValidNickName:safe.nickName]) {
         NSLog(@"Cannot Save Safe, as existing Safe exists with this nick name, or the name is invalid!");
         return;
     }
     
-    [self.mutableSafes addObject:newSafe];
+    [self.mutableSafes addObject:safe];
     
     [self save];
 }

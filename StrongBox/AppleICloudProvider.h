@@ -20,4 +20,7 @@
 @property (nonatomic, readonly) BOOL providesIcons;
 @property (nonatomic, readonly) BOOL browsable;
 
+- (void)delete:(SafeMetaData*)safeMetaData
+    completion:(void (^)(NSError *error))completion;
+
 @end

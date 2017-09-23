@@ -27,6 +27,8 @@
 #import "SelectStorageProviderController.h"
 #import <PopupDialog/PopupDialog-Swift.h>
 #import "AppleICloudProvider.h"
+#import "Strongbox.h"
+#import "SafeItem.h"
 
 #define kTouchId911Limit 5
 
@@ -67,6 +69,19 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    [[iCloud sharedCloud] setDelegate:self];
+    
+    // TODO:
+    [[iCloud sharedCloud] setVerboseLogging:YES];
+    
+    [[iCloud sharedCloud] setupiCloudDocumentSyncWithUbiquityContainer:kStrongboxICloudContainerIdentifier];
+    
+    BOOL cloudIsAvailable = [[iCloud sharedCloud] checkCloudAvailability];
+    if (cloudIsAvailable) {
+        //YES
+        NSLog(@"iCloud is Available");
+    }
+    
     [self customizeUi];
     
     if(![[Settings sharedInstance] isPro]) {
@@ -82,6 +97,155 @@
     else {
         [self showStartupMessaging];
     }
+}
+
+- (void)iCloudAvailabilityDidChangeToState:(BOOL)cloudIsAvailable withUbiquityToken:(id)ubiquityToken withUbiquityContainer:(NSURL *)ubiquityContainer {
+    NSLog(@"iCloudAvailabilityDidChangeToState: cloudIsAvailable: %d ubiquityToken: %@ ubiquityContainer: %@", cloudIsAvailable, ubiquityToken, ubiquityContainer);
+}
+
+- (void)iCloudFileUpdateDidBegin {
+    NSLog(@"------------------------------------------------- BEGIN -------------------------------------------------");
+}
+
+- (void)iCloudFileUpdateDidEnd {
+    NSLog(@"************************************************** END *************************************************");
+}
+
+- (void)iCloudFilesDidChange:(NSMutableArray *)files withNewFileNames:(NSMutableArray *)fileNames {
+    BOOL added = [self addAnyNewICloudSafes:files];
+    
+    BOOL removed = [self removeAnyDeletedICloudSafes:files];
+    
+    //    for(NSMetadataItem* item in files) {
+    //        // Update existing matches & add new ones
+    //
+    //        NSString *fileName = [item valueForAttribute:NSMetadataItemFSNameKey];
+    //
+    //        NSArray<SafeMetaData*> *existsAlreadyList = [[SafesCollection sharedInstance].safes filteredArrayUsingPredicate:
+    //                                                   [NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
+    //            SafeMetaData* existing = (SafeMetaData*)evaluatedObject;
+    //            return existing.storageProvider == kiCloud && [existing.fileName isEqualToString:fileName];
+    //        }]];
+    //
+    //        NSURL *url = [item valueForAttribute:NSMetadataItemURLKey];
+    //        NSString *displayName = [item valueForAttribute:NSMetadataItemDisplayNameKey];
+    //
+    //        if(existsAlreadyList.count) {
+    //            if(existsAlreadyList.count > 1) {
+    //                NSLog(@"WARNING! More than one match from iCloud files update for filename %@!", fileName);
+    //            }
+    //
+    //            // We already know a little something about this file, update the metadata all the same
+    //
+    //
+    //            SafeMetaData* existing = [existsAlreadyList firstObject];
+    //
+    //            existing.nickName = displayName;
+    //            existing.fileIdentifier = [url absoluteString];
+    //
+    //            //NSLog(@"Update existing iCloud safe with cloud data [%@]", existing);
+    //        }
+    //        else {
+    //
+    //        }
+    //    }
+    
+    if(added || removed) {
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            [self refreshView];
+        });
+    }
+}
+
+-(BOOL)addAnyNewICloudSafes:(NSArray<NSMetadataItem*> *)files {
+    BOOL added = NO;
+    
+    NSMutableDictionary<NSString*, NSMetadataItem*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
+    NSDictionary<NSString*, SafeMetaData*>* mine = [self getAllMyICloudSafeFileNames];
+    
+    for(NSString* fileName in mine.allKeys) {
+        [theirs removeObjectForKey:fileName];
+    }
+    
+    for (NSMetadataItem* metadataItem in theirs.allValues) {
+        NSString *fileName = [metadataItem valueForAttribute:NSMetadataItemFSNameKey];
+        NSURL *url = [metadataItem valueForAttribute:NSMetadataItemURLKey];
+        NSString *displayName = [metadataItem valueForAttribute:NSMetadataItemDisplayNameKey];
+        
+        SafeMetaData *newSafe = [[SafeMetaData alloc] initWithNickName:displayName storageProvider:kiCloud fileName:fileName fileIdentifier:[url absoluteString]];
+        
+        NSLog(@"Got New Safe... Adding [%@]", newSafe);
+        
+        [[SafesCollection sharedInstance] add:newSafe];
+        
+        added = YES;
+    }
+    
+    return added;
+
+}
+
+-(NSMutableDictionary<NSString*, SafeMetaData*>*)getAllMyICloudSafeFileNames {
+    NSMutableDictionary<NSString*, SafeMetaData*>* ret = [NSMutableDictionary dictionary];
+    
+    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
+        if(safe.storageProvider == kiCloud) {
+            [ret setValue:safe forKey:safe.fileName];
+        }
+    }
+    
+    return ret;
+}
+
+-(NSMutableDictionary<NSString*, NSMetadataItem*>*)getAllICloudSafeFileNamesFromMetadataFilesList:(NSArray<NSMetadataItem*>*)files {
+    NSMutableDictionary<NSString*, NSMetadataItem*>* ret = [NSMutableDictionary dictionary];
+    
+    for(NSMetadataItem *item in files) {
+        NSString *fileName = [item valueForAttribute:NSMetadataItemFSNameKey];
+        [ret setObject:item forKey:fileName];
+    }
+    
+    return ret;
+}
+
+- (BOOL)removeAnyDeletedICloudSafes:(NSArray<NSMetadataItem*>*)files {
+    BOOL removed = NO;
+    
+    NSMutableDictionary<NSString*, SafeMetaData*> *safeFileNamesToBeRemoved = [self getAllMyICloudSafeFileNames];
+    
+    NSArray<NSURL*>* allFiles = [[iCloud sharedCloud] listCloudFiles];
+
+    for(NSURL* url in allFiles) {
+        [safeFileNamesToBeRemoved removeObjectForKey:[url lastPathComponent]];
+    }
+    
+    for(SafeMetaData* safe in safeFileNamesToBeRemoved.allValues) {
+        NSLog(@"Safe Removed: %@", safe);
+        
+        [SafesCollection.sharedInstance removeSafe:safe];
+        removed = YES;
+    }
+
+    return removed;
+}
+
+//
+//-(SafeMetaData*)getAppleICloudSafeMetaDataByFileName:(NSString*)fileName {
+//    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
+//        if(safe.storageProvider == kiCloud && [fileName isEqualToString:safe.fileName]) {
+//            return safe;
+//        }
+//    }
+//
+//    return nil;
+//}
+
+- (void)iCloudFileConflictBetweenCloudFile:(NSDictionary *)cloudFile andLocalFile:(NSDictionary *)localFile {
+    NSLog(@"iCloudFileConflictBetweenCloudFile");
+}
+
+- (void)iCloudDocumentErrorOccured:(NSError *)error {
+    NSLog(@"iCloudDocumentErrorOccured: %@", error);
 }
 
 - (void)customizeUi {
@@ -189,51 +353,6 @@
     return YES;
 }
 
-- (nullable NSArray<UITableViewRowAction *> *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
-//    UITableViewRowAction *exportAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDefault title:@"Export" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
-//        ;
-//    }];
-//    
-//    exportAction.backgroundColor = [UIColor yellowColor]; //colorWithRed:0.298 green:0.851 blue:0.3922 alpha:1.0];
-//    
-    UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:@"Delete" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
-        [self deleteSafe:indexPath];
-    }];
-//
-//    UITableViewRowAction *migrateAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDefault title:@"Migrate" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
-//        ;
-//    }];
-//    
-//    migrateAction.backgroundColor = [UIColor darkGrayColor]; //colorWithRed:0.298 green:0.851 blue:0.3922 alpha:1.0];
-    
-    return @[deleteAction]; //, migrateAction, exportAction];
-}
-
-- (void)deleteSafe:(NSIndexPath * _Nonnull)indexPath {
-    SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
-    
-    NSString *message = [NSString stringWithFormat:@"Are you sure you want to remove this safe from Strongbox?%@",
-                         safe.storageProvider == kLocalDevice ? @"" : @" (NB: The underlying safe data file will not be deleted)"];
-    
-    [Alerts yesNo:self
-            title:@"Are you sure?"
-          message:message
-           action:^(BOOL response) {
-               if (response) {
-                   SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
-                   
-                   [self cleanupSafeForRemoval:safe];
-                   [[SafesCollection sharedInstance] removeSafesAt:[NSIndexSet indexSetWithIndex:indexPath.row]];
-                   [[SafesCollection sharedInstance] save];
-                   
-                   dispatch_async(dispatch_get_main_queue(), ^(void) {
-                       [self setEditing:NO];
-                       [self refreshView];
-                   });
-               }
-           }];
-}
-
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (self.editing) {
         return;
@@ -255,7 +374,38 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
-- (void)cleanupSafeForRemoval:(SafeMetaData *)safe {
+- (nullable NSArray<UITableViewRowAction *> *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
+    UITableViewRowAction *removeAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:@"Remove" handler:^(UITableViewRowAction * _Nonnull action, NSIndexPath * _Nonnull indexPath) {
+        [self removeSafe:indexPath];
+    }];
+
+    return @[removeAction];
+}
+
+- (void)removeSafe:(NSIndexPath * _Nonnull)indexPath {
+    SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
+    
+    NSString *message;
+    
+    if(safe.storageProvider == kiCloud) {
+        message = @"Are you sure you want to remove this safe from Strongbox and iCloud?";
+    }
+    else {
+        message = [NSString stringWithFormat:@"Are you sure you want to remove this safe from Strongbox?%@",
+                         safe.storageProvider == kLocalDevice ? @"" : @" (NB: The underlying safe data file will not be deleted)"];
+    }
+    
+    [Alerts yesNo:self
+            title:@"Are you sure?"
+          message:message
+           action:^(BOOL response) {
+               if (response) {
+                   [self removeAndCleanupSafe:safe];
+               }
+           }];
+}
+
+- (void)removeAndCleanupSafe:(SafeMetaData *)safe {
     if (safe.storageProvider == kLocalDevice) {
         [[LocalDeviceStorageProvider sharedInstance] delete:safe
                 completion:^(NSError *error) {
@@ -267,13 +417,34 @@
                     }
                 }];
     }
-    else if (safe.offlineCacheEnabled && safe.offlineCacheAvailable)
+    else if (safe.storageProvider == kiCloud) {
+        [[AppleICloudProvider sharedInstance] delete:safe completion:^(NSError *error) {
+            if(error) {
+                NSLog(@"%@", error);
+                [Alerts error:self title:@"Error Deleting iCloud Safe" error:error];
+                return;
+            }
+            else {
+                NSLog(@"iCloud file removed");
+            }
+        }];
+    }
+         
+    if (safe.offlineCacheEnabled && safe.offlineCacheAvailable)
     {
         [[LocalDeviceStorageProvider sharedInstance] deleteOfflineCachedSafe:safe
-                                 completion:^(NSError *error) {
-                                     //NSLog(@"Delete Offline Cache File. Error = %@", error);
-                                 }];
+                                                                  completion:^(NSError *error) {
+                                                                      NSLog(@"Delete Offline Cache File. Error = %@", error);
+                                                                  }];
     }
+         
+    [[SafesCollection sharedInstance] removeSafe:safe];
+    [[SafesCollection sharedInstance] save];
+
+    dispatch_async(dispatch_get_main_queue(), ^(void) {
+        [self setEditing:NO];
+        [self refreshView];
+    });
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -751,12 +922,12 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
     NSUInteger count = [response.products count];
     if (count > 0) {
         self.validProducts = response.products;
-        for (SKProduct *validProduct in self.validProducts) {
-            NSLog(@"%@", validProduct.productIdentifier);
-            NSLog(@"%@", validProduct.localizedTitle);
-            NSLog(@"%@", validProduct.localizedDescription);
-            NSLog(@"%@", validProduct.price);
-        }
+//        for (SKProduct *validProduct in self.validProducts) {
+//            NSLog(@"%@", validProduct.productIdentifier);
+//            NSLog(@"%@", validProduct.localizedTitle);
+//            NSLog(@"%@", validProduct.localizedDescription);
+//            NSLog(@"%@", validProduct.price);
+//        }
         
         [self refreshView];
     }

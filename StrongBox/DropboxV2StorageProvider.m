@@ -57,19 +57,19 @@
                     data:data
               completion:^(NSError *error) {
                   dispatch_async(dispatch_get_main_queue(), ^{
-                  [SVProgressHUD dismiss];
+                      [SVProgressHUD dismiss];
                   });
 
                   if (error == nil) {
-                  SafeMetaData *metadata = [[SafeMetaData alloc] initWithNickName:nickName
-                                                            storageProvider:self.storageId
-                                                        offlineCacheEnabled:YES];
-                  metadata.fileName = desiredFilename;
-                  metadata.fileIdentifier = parentFolderPath;
-                  completion(metadata, error);
+                      SafeMetaData *metadata = [[SafeMetaData alloc] initWithNickName:nickName
+                                                                      storageProvider:self.storageId
+                                                                             fileName:desiredFilename
+                                                                       fileIdentifier:parentFolderPath];
+
+                      completion(metadata, error);
                   }
                   else {
-                  completion(nil, error);
+                      completion(nil, error);
                   }
               }];
 }
@@ -326,19 +326,13 @@
 }
 
 - (SafeMetaData *)getSafeMetaData:(NSString *)nickName providerData:(NSObject *)providerData {
-    SafeMetaData *safe = [[SafeMetaData alloc] initWithNickName:nickName
-                                                storageProvider:self.storageId
-                                            offlineCacheEnabled:YES];
-
     DBFILESFileMetadata *file = (DBFILESFileMetadata *)providerData;
-
-    safe.fileName = file.name;
-
     NSString *parent = (file.pathLower).stringByDeletingLastPathComponent;
 
-    safe.fileIdentifier = parent;
-
-    return safe;
+    return [[SafeMetaData alloc] initWithNickName:nickName
+                                  storageProvider:self.storageId
+                                         fileName:file.name
+                                   fileIdentifier:parent];
 }
 
 - (void)loadIcon:(NSObject *)providerData viewController:(UIViewController *)viewController

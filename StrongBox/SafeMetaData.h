@@ -17,9 +17,14 @@ typedef NS_ENUM (unsigned int, StorageProvider) {
     kiCloud,
 };
 
+//- (instancetype)initWithNickName:(NSString *)nickName
+//                 storageProvider:(StorageProvider)storageProvider
+//             offlineCacheEnabled:(BOOL)offlineCacheEnabled;
+
 - (instancetype)initWithNickName:(NSString *)nickName
                  storageProvider:(StorageProvider)storageProvider
-             offlineCacheEnabled:(BOOL)offlineCacheEnabled;
+                        fileName:(NSString*)fileName
+                  fileIdentifier:(NSString*)fileIdentifier;
 
 @property (nonatomic, strong) NSString *nickName;
 @property (nonatomic, strong) NSString *fileName;

@@ -12,12 +12,18 @@
 
 - (instancetype)initWithNickName:(NSString *)nickName
                  storageProvider:(StorageProvider)storageProvider
-             offlineCacheEnabled:(BOOL)offlineCacheEnabled {
-    self.nickName = nickName;
-    self.storageProvider = storageProvider;
-    self.isTouchIdEnabled = YES;
-    self.offlineCacheEnabled = offlineCacheEnabled;
-
+                        fileName:(NSString*)fileName
+                  fileIdentifier:(NSString*)fileIdentifier {
+    if(self = [super init]) {
+        self.nickName = nickName;
+        self.storageProvider = storageProvider;
+        self.fileName = fileName;
+        self.fileIdentifier = fileIdentifier;
+    
+        self.isTouchIdEnabled = YES;
+        self.offlineCacheEnabled = YES;
+    }
+    
     return self;
 }
 
@@ -75,6 +81,10 @@
     ret.offlineCacheAvailable = offlineCacheAvailable ? offlineCacheAvailable.boolValue : NO;
 
     return ret;
+}
+
+- (NSString *)description {
+    return [NSString stringWithFormat:@"%@ [%u] - [%@-%@]", self.nickName, self.storageProvider, self.fileName, self.fileIdentifier];
 }
 
 @end

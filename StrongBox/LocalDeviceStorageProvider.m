@@ -54,10 +54,9 @@
 
     [data writeToFile:path atomically:YES];
 
-    SafeMetaData *metadata = [[SafeMetaData alloc] initWithNickName:nickName storageProvider:self.storageId offlineCacheEnabled:NO];
+    SafeMetaData *metadata = [[SafeMetaData alloc] initWithNickName:nickName storageProvider:self.storageId fileName:path.lastPathComponent fileIdentifier:path.lastPathComponent];
 
-    metadata.fileIdentifier = path.lastPathComponent;
-    metadata.fileName = path.lastPathComponent;
+    metadata.offlineCacheEnabled = NO;
 
     completion(metadata, nil);
 }
