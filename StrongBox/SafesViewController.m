@@ -51,12 +51,6 @@
     [self bindProOrFreeTrialUi];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-    
-    [self refreshView];
-}
-
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
@@ -65,22 +59,47 @@
     }
 }
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
+
+
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
     
-    [[iCloud sharedCloud] setDelegate:self];
+    //[[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)documentStateChanged:(NSNotification *)notificaiton {
+    // TODO:
+    NSLog(@"documentStateChanged");
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(documentStateChanged:)
+                                                 name:UIDocumentStateChangedNotification
+                                               object:nil];
     
     // TODO:
-    [[iCloud sharedCloud] setVerboseLogging:YES];
+
+    _iCloudURLsReady = NO;
+    [_iCloudFilesMetadata removeAllObjects];
     
-    [[iCloud sharedCloud] setupiCloudDocumentSyncWithUbiquityContainer:kStrongboxICloudContainerIdentifier];
+    [self initializeAppleICloudProvider];
     
-    BOOL cloudIsAvailable = [[iCloud sharedCloud] checkCloudAvailability];
-    if (cloudIsAvailable) {
-        //YES
-        NSLog(@"iCloud is Available");
-    }
-    
+    [self refreshView];
+}
+
+
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    // TODO:
+    _iCloudFilesMetadata = [[NSMutableArray alloc] init];
+
     [self customizeUi];
     
     if(![[Settings sharedInstance] isPro]) {
@@ -98,23 +117,149 @@
     }
 }
 
-- (void)iCloudAvailabilityDidChangeToState:(BOOL)cloudIsAvailable withUbiquityToken:(id)ubiquityToken withUbiquityContainer:(NSURL *)ubiquityContainer {
-    NSLog(@"iCloudAvailabilityDidChangeToState: cloudIsAvailable: %d ubiquityToken: %@ ubiquityContainer: %@", cloudIsAvailable, ubiquityToken, ubiquityContainer);
+BOOL _iCloudAvailable; // TODO:                       // TODO: Add new private instance variables
+NSMetadataQuery * _query;
+BOOL _iCloudURLsReady;
+NSMutableArray<NSMetadataItem*> * _iCloudFilesMetadata;
+
+- (void)initializeAppleICloudProvider {
+    [[AppleICloudProvider sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
+        _iCloudAvailable = available;
+        
+        if (!_iCloudAvailable) {
+            
+            // If iCloud isn't available, set promoted to no (so we can ask them next time it becomes available)
+            [Settings sharedInstance].iCloudPrompted = NO;
+            
+            // If iCloud was toggled on previously, warn user that the docs will be loaded locally
+            if ([[Settings sharedInstance] iCloudWasOn]) {
+                [Alerts warn:self
+                       title:@"You're Not Using iCloud"
+                     message:@"Your documents were removed from this device but remain stored in iCloud."];
+            }
+            
+            // No matter what, iCloud isn't available so switch it to off.
+            [Settings sharedInstance].iCloudOn = NO;
+            [Settings sharedInstance].iCloudWasOn = NO;
+        }
+        else {
+            // Ask user if want to turn on iCloud if it's available and we haven't asked already
+            if (![Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudPrompted) {
+                [Settings sharedInstance].iCloudPrompted = YES;
+                
+                [Alerts yesNo:self
+                        title:@"iCloud is Available"
+                      message:@"Automatically store your local documents in the cloud to keep them up-to-date across all your devices?"
+                       action:^(BOOL response) {
+                           [Settings sharedInstance].iCloudOn = YES;
+                           //[self refresh]; // TODO:
+                       }];
+            }
+            
+            // If iCloud newly switched off, move local docs to iCloud
+            if ([Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudWasOn) {
+                [self localToiCloud];
+            }
+            
+            // If iCloud newly switched on, move iCloud docs to local
+            if (![Settings sharedInstance].iCloudOn && [Settings sharedInstance].iCloudWasOn) {
+                [self iCloudToLocal];
+            }
+            
+            // Start querying iCloud for files, whether on or off
+            [self startQuery];
+            
+            // No matter what, refresh with current value of iCloudOn
+            [Settings sharedInstance].iCloudWasOn = [Settings sharedInstance].iCloudOn;
+        }
+        
+        if (![Settings sharedInstance].iCloudOn) {
+            //[self loadLocal]; // TODO:
+        }
+    }];
 }
 
-- (void)iCloudFileUpdateDidBegin {
-    NSLog(@"------------------------------------------------- BEGIN -------------------------------------------------");
+- (NSMetadataQuery *)documentQuery {
+    NSMetadataQuery * query = [[NSMetadataQuery alloc] init];
+    
+    if (query) {
+        [query setSearchScopes:[NSArray arrayWithObject:NSMetadataQueryUbiquitousDocumentsScope]];
+        
+        [query setPredicate:[NSPredicate predicateWithFormat:@"%K LIKE %@",
+                             NSMetadataItemFSNameKey, @"*"]];
+    }
+    
+    return query;
 }
 
-- (void)iCloudFileUpdateDidEnd {
-    NSLog(@"************************************************** END *************************************************");
+// Add to "iCloud query" section after documentQuery method, replacing the existing startQuery method
+- (void)stopQuery {
+    if (_query) {
+        NSLog(@"No longer watching iCloud dir...");
+        
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:NSMetadataQueryDidFinishGatheringNotification object:nil];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:NSMetadataQueryDidUpdateNotification object:nil];
+        [_query stopQuery];
+        _query = nil;
+    }
 }
 
-- (void)iCloudFilesDidChange:(NSMutableArray *)files withNewFileNames:(NSMutableArray *)fileNames {
+- (void)startQuery {
+    [self stopQuery];
+    
+    NSLog(@"Starting to watch iCloud dir...");
+    
+    _query = [self documentQuery];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(processiCloudFiles:)
+                                                 name:NSMetadataQueryDidFinishGatheringNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(processiCloudFiles:)
+                                                 name:NSMetadataQueryDidUpdateNotification
+                                               object:nil];
+    
+    [_query startQuery];
+}
+
+- (void)processiCloudFiles:(NSNotification *)notification {
+    // Always disable updates while processing results
+    
+    [_query disableUpdates];
+    [_iCloudFilesMetadata removeAllObjects];
+    
+    // The query reports all files found, every time.
+    
+    NSArray<NSMetadataItem*> * queryResults = [_query results];
+    for (NSMetadataItem * result in queryResults) {
+        NSURL * fileURL = [result valueForAttribute:NSMetadataItemURLKey];
+        NSNumber * aBool = nil;
+        
+        // Don't include hidden files
+        [fileURL getResourceValue:&aBool forKey:NSURLIsHiddenKey error:nil];
+        if (aBool && ![aBool boolValue]) {
+            [_iCloudFilesMetadata addObject:result];
+        }
+        
+        
+    }
+    
+    NSLog(@"Found %lu iCloud files.", (unsigned long)_iCloudFilesMetadata.count);
+    _iCloudURLsReady = YES;
+    
+    if ([Settings sharedInstance].iCloudOn) {
+        [self iCloudFilesDidChange:_iCloudFilesMetadata];
+    }
+    
+    [_query enableUpdates];
+}
+
+- (void)iCloudFilesDidChange:(NSMutableArray *)files {
     BOOL added = [self addAnyNewICloudSafes:files];
-    
+
     BOOL removed = [self removeAnyDeletedICloudSafes:files];
-    
+
     //    for(NSMetadataItem* item in files) {
     //        // Update existing matches & add new ones
     //
@@ -148,7 +293,7 @@
     //
     //        }
     //    }
-    
+
     if(added || removed) {
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             [self refreshView];
@@ -158,64 +303,40 @@
 
 -(BOOL)addAnyNewICloudSafes:(NSArray<NSMetadataItem*> *)files {
     BOOL added = NO;
-    
+
     NSMutableDictionary<NSString*, NSMetadataItem*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
-    NSDictionary<NSString*, SafeMetaData*>* mine = [self getAllMyICloudSafeFileNames];
     
+    NSDictionary<NSString*, SafeMetaData*>* mine = [self getAllMyICloudSafeFileNames];
+
     for(NSString* fileName in mine.allKeys) {
         [theirs removeObjectForKey:fileName];
     }
-    
+
     for (NSMetadataItem* metadataItem in theirs.allValues) {
         NSString *fileName = [metadataItem valueForAttribute:NSMetadataItemFSNameKey];
         NSURL *url = [metadataItem valueForAttribute:NSMetadataItemURLKey];
         NSString *displayName = [metadataItem valueForAttribute:NSMetadataItemDisplayNameKey];
-        
+
         SafeMetaData *newSafe = [[SafeMetaData alloc] initWithNickName:displayName storageProvider:kiCloud fileName:fileName fileIdentifier:[url absoluteString]];
-        
+
         NSLog(@"Got New Safe... Adding [%@]", newSafe);
-        
+
         [[SafesCollection sharedInstance] add:newSafe];
-        
+
         added = YES;
     }
-    
+
     return added;
-
-}
-
--(NSMutableDictionary<NSString*, SafeMetaData*>*)getAllMyICloudSafeFileNames {
-    NSMutableDictionary<NSString*, SafeMetaData*>* ret = [NSMutableDictionary dictionary];
-    
-    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
-        if(safe.storageProvider == kiCloud) {
-            [ret setValue:safe forKey:safe.fileName];
-        }
-    }
-    
-    return ret;
-}
-
--(NSMutableDictionary<NSString*, NSMetadataItem*>*)getAllICloudSafeFileNamesFromMetadataFilesList:(NSArray<NSMetadataItem*>*)files {
-    NSMutableDictionary<NSString*, NSMetadataItem*>* ret = [NSMutableDictionary dictionary];
-    
-    for(NSMetadataItem *item in files) {
-        NSString *fileName = [item valueForAttribute:NSMetadataItemFSNameKey];
-        [ret setObject:item forKey:fileName];
-    }
-    
-    return ret;
 }
 
 - (BOOL)removeAnyDeletedICloudSafes:(NSArray<NSMetadataItem*>*)files {
     BOOL removed = NO;
     
     NSMutableDictionary<NSString*, SafeMetaData*> *safeFileNamesToBeRemoved = [self getAllMyICloudSafeFileNames];
+    NSMutableDictionary<NSString*, NSMetadataItem*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
     
-    NSArray<NSURL*>* allFiles = [[iCloud sharedCloud] listCloudFiles];
-
-    for(NSURL* url in allFiles) {
-        [safeFileNamesToBeRemoved removeObjectForKey:[url lastPathComponent]];
+    for(NSString* fileName in theirs.allKeys) {
+        [safeFileNamesToBeRemoved removeObjectForKey:fileName];
     }
     
     for(SafeMetaData* safe in safeFileNamesToBeRemoved.allValues) {
@@ -224,17 +345,65 @@
         [SafesCollection.sharedInstance removeSafe:safe];
         removed = YES;
     }
-
+    
     return removed;
 }
 
-- (void)iCloudFileConflictBetweenCloudFile:(NSDictionary *)cloudFile andLocalFile:(NSDictionary *)localFile {
-    NSLog(@"iCloudFileConflictBetweenCloudFile");
+-(NSMutableDictionary<NSString*, SafeMetaData*>*)getAllMyICloudSafeFileNames {
+    NSMutableDictionary<NSString*, SafeMetaData*>* ret = [NSMutableDictionary dictionary];
+
+    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
+        if(safe.storageProvider == kiCloud) {
+            [ret setValue:safe forKey:safe.fileName];
+        }
+    }
+
+    return ret;
 }
 
-- (void)iCloudDocumentErrorOccured:(NSError *)error {
-    NSLog(@"iCloudDocumentErrorOccured: %@", error);
+-(NSMutableDictionary<NSString*, NSMetadataItem*>*)getAllICloudSafeFileNamesFromMetadataFilesList:(NSArray<NSMetadataItem*>*)files {
+    NSMutableDictionary<NSString*, NSMetadataItem*>* ret = [NSMutableDictionary dictionary];
+
+    for(NSMetadataItem *item in files) {
+        NSString *fileName = [item valueForAttribute:NSMetadataItemFSNameKey];
+        [ret setObject:item forKey:fileName];
+    }
+
+    return ret;
 }
+
+// Add some stub methods to the bottom of the "File management" section
+- (void)iCloudToLocal {
+    NSLog(@"iCloud => local");
+}
+
+- (void)localToiCloud {
+    NSLog(@"local => iCloud");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 - (void)customizeUi {
     self.tableView.emptyDataSetSource = self;

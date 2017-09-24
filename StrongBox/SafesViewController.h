@@ -9,9 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <StoreKit/StoreKit.h>
 #import <DZNEmptyDataSet/UIScrollView+EmptyDataSet.h>
-#import "iCloud.h"
 
-@interface SafesViewController : UITableViewController<SKProductsRequestDelegate, DZNEmptyDataSetSource, DZNEmptyDataSetDelegate, iCloudDelegate>
+@interface SafesViewController : UITableViewController<SKProductsRequestDelegate, DZNEmptyDataSetSource, DZNEmptyDataSetDelegate>
 
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *barButtonFlexibleSpace;
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonTouchID911;  // strong outlet because we remove/add from toolbar

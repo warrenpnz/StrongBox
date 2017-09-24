@@ -39,6 +39,7 @@
     [self.buttonSignoutGoogleDrive setTitle:@"(No Current Google Drive Session)" forState:UIControlStateDisabled];
     [self.buttonSignoutGoogleDrive setTitleColor:[UIColor lightGrayColor] forState:UIControlStateDisabled];
 
+    [self bindUseICloud];
     [self bindAboutButton];
     [self bindLongTouchCopy];
     [self bindShowPasswordOnDetails];
@@ -69,6 +70,10 @@
     
     [self.buttonAbout setTitle:aboutString forState:UIControlStateNormal];
     [self.buttonAbout setTitle:aboutString forState:UIControlStateHighlighted];
+}
+
+- (void)bindUseICloud {
+    self.switchUseICloud.on = [[Settings sharedInstance] iCloudOn];
 }
 
 - (void)bindLongTouchCopy {
@@ -128,6 +133,14 @@
                    }
                }];
     }
+}
+
+- (IBAction)onUseICloud:(id)sender {
+    NSLog(@"Setting iCloudOn to %d", self.switchUseICloud.on);
+    
+    [[Settings sharedInstance] setICloudOn:self.switchUseICloud.on];
+    
+    [self bindUseICloud];
 }
 
 - (IBAction)onSignoutGoogleDrive:(id)sender {

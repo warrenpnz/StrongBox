@@ -15,6 +15,5 @@ target 'Strongbox' do
     pod 'ObjectiveDropboxOfficial'
     pod 'DZNEmptyDataSet'
     pod 'PopupDialog'
-    pod 'iCloudDocumentSync'
 end
 

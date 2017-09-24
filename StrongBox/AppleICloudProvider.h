@@ -13,6 +13,8 @@
 
 + (instancetype)sharedInstance;
 
+- (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion;
+
 @property (strong, nonatomic, readonly) NSString *displayName;
 @property (strong, nonatomic, readonly) NSString *icon;
 @property (nonatomic, readonly) StorageProvider storageId;

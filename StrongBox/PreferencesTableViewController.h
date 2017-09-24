@@ -10,6 +10,7 @@
 
 @interface PreferencesTableViewController : UITableViewController
 
+- (IBAction)onUseICloud:(id)sender;
 - (IBAction)onSignoutGoogleDrive:(id)sender;
 - (IBAction)onUnlinkDropbox:(id)sender;
 
@@ -22,6 +23,7 @@
 @property (weak, nonatomic) IBOutlet UISwitch *switchShowPasswordOnDetails;
 @property (weak, nonatomic) IBOutlet UIButton *buttonAbout;
 
+@property (weak, nonatomic) IBOutlet UISwitch *switchUseICloud;
 @property (weak, nonatomic) IBOutlet UIButton *buttonSignoutGoogleDrive;
 @property (weak, nonatomic) IBOutlet UIButton *buttonUnlinkDropbox;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentAutoLock;

@@ -50,5 +50,8 @@
 - (void)setCopyPasswordOnLongPress:(BOOL)value;
 
 @property (nonatomic) BOOL neverShowForMacAppMessage;
+@property (nonatomic) BOOL iCloudOn;
+@property (nonatomic) BOOL iCloudWasOn;
+@property (nonatomic) BOOL iCloudPrompted;
 
 @end
