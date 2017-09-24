@@ -9,8 +9,8 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>dat</string>
 				<string>psafe3</string>
+				<string>dat</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
 			<string>AppIcon</string>

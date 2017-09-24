@@ -99,7 +99,10 @@
 }
 
 - (NSString * _Nonnull)bindStatusPane {
-    return self.labelLeftStatus.stringValue = [NSString stringWithFormat:@"%@", self.model.fileUrl ? self.model.fileUrl.path : @"[Not Saved]"];
+    return self.labelLeftStatus.stringValue = self.model.fileUrl ?
+        //[[[NSFileManager defaultManager] componentsToDisplayForPath:self.model.fileUrl.path] componentsJoinedByString:@"/"]:
+    self.model.fileUrl.path :
+    @"[Not Saved]";
 }
 
 - (void)bindToModel {

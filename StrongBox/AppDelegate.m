@@ -16,7 +16,7 @@
 #import "ObjectiveDropboxOfficial/ObjectiveDropboxOfficial.h"
 #import "GoogleDriveManager.h"
 #import "Settings.h"
-#import "AppleICloudProvider.h"
+#import "AppleICloudAndLocalDocumentHybridProvider.h"
 
 @implementation AppDelegate {
     NSDate *enterBackgroundTime;

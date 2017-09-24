@@ -1391,20 +1391,20 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <stackView opaque="NO" contentMode="scaleToFill" spacing="15" translatesAutoresizingMaskIntoConstraints="NO" id="xxr-r2-ZaY">
-                                            <rect key="frame" x="132" y="8" width="150" height="49"/>
+                                            <rect key="frame" x="107" y="8" width="200" height="49"/>
                                             <subviews>
                                                 <imageView userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="product32" translatesAutoresizingMaskIntoConstraints="NO" id="XCJ-ng-sRh">
                                                     <rect key="frame" x="0.0" y="0.0" width="32" height="49"/>
                                                 </imageView>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" verticalHuggingPriority="251" horizontalCompressionResistancePriority="749" text="This is a fairly long provider text" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hmd-mk-C5q">
-                                                    <rect key="frame" x="47" y="0.0" width="103" height="49"/>
+                                                    <rect key="frame" x="47" y="0.0" width="153" height="49"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstAttribute="width" constant="150" id="zNQ-Kf-Y0g"/>
+                                                <constraint firstAttribute="width" constant="200" id="zNQ-Kf-Y0g"/>
                                             </constraints>
                                         </stackView>
                                     </subviews>

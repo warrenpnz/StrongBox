@@ -25,6 +25,7 @@
 		4D2E35691F62C9CB0064B5D5 /* SelectStorageProviderController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D2E35681F62C9CB0064B5D5 /* SelectStorageProviderController.m */; };
 		4D31925F1ECF528B00DF6ED0 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4D31925E1ECF528B00DF6ED0 /* GoogleService-Info.plist */; };
 		4D3694DE1F54547100A82811 /* Utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D3694DD1F54547100A82811 /* Utils.m */; };
+		4D3D991C1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D3D991B1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.m */; };
 		4D40EEEE1ED87734006532F8 /* StorageBrowserTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D40EEED1ED87734006532F8 /* StorageBrowserTableViewController.m */; };
 		4D40EEF11ED878DB006532F8 /* StorageBrowserItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D40EEF01ED878DB006532F8 /* StorageBrowserItem.m */; };
 		4D4C49041EDEC0B900EB857D /* RecordView.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C49031EDEC0B900EB857D /* RecordView.m */; };
@@ -49,7 +50,7 @@
 		4DBE5B391C8356C700C310BC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DBE5B381C8356C700C310BC /* AppDelegate.m */; };
 		4DC2D4141F39D8A90029DBFE /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4DC2D4131F39D8A90029DBFE /* Images.xcassets */; };
 		4DCF5FBC1F7294A800011756 /* PasswordSafeUIDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DCF5FBB1F7294A800011756 /* PasswordSafeUIDocument.m */; };
-		4DCF5FBF1F7299DD00011756 /* AppleICloudProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */; };
+		4DCF5FBF1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DCF5FBE1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.m */; };
 		4DD59F541D3A5A7300F864ED /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D1757A21C8361D200E6356F /* main.m */; };
 		4DE229A21ED8A102000FDC3D /* DropboxV2StorageProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DE229A11ED8A102000FDC3D /* DropboxV2StorageProvider.m */; };
 		4DF631A01F69571B006C8F2C /* PasswordGenerationSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 4DF6319F1F69571B006C8F2C /* PasswordGenerationSettings.m */; };
@@ -101,6 +102,8 @@
 		4D31925E1ECF528B00DF6ED0 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../GoogleService-Info.plist"; sourceTree = "<group>"; };
 		4D3694DC1F54547100A82811 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Utils.h; path = PwSafeModel/Utils.h; sourceTree = SOURCE_ROOT; };
 		4D3694DD1F54547100A82811 /* Utils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Utils.m; path = PwSafeModel/Utils.m; sourceTree = SOURCE_ROOT; };
+		4D3D991A1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppleICloudOrLocalSafeFile.h; sourceTree = "<group>"; };
+		4D3D991B1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppleICloudOrLocalSafeFile.m; sourceTree = "<group>"; };
 		4D40EEEC1ED87734006532F8 /* StorageBrowserTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StorageBrowserTableViewController.h; sourceTree = "<group>"; };
 		4D40EEED1ED87734006532F8 /* StorageBrowserTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StorageBrowserTableViewController.m; sourceTree = "<group>"; };
 		4D40EEEF1ED878DB006532F8 /* StorageBrowserItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StorageBrowserItem.h; sourceTree = "<group>"; };
@@ -147,8 +150,8 @@
 		4DC8DFF01EE19CE300F1F757 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		4DCF5FBA1F7294A800011756 /* PasswordSafeUIDocument.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PasswordSafeUIDocument.h; sourceTree = "<group>"; };
 		4DCF5FBB1F7294A800011756 /* PasswordSafeUIDocument.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PasswordSafeUIDocument.m; sourceTree = "<group>"; };
-		4DCF5FBD1F7299DD00011756 /* AppleICloudProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppleICloudProvider.h; sourceTree = "<group>"; };
-		4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppleICloudProvider.m; sourceTree = "<group>"; };
+		4DCF5FBD1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppleICloudAndLocalDocumentHybridProvider.h; sourceTree = "<group>"; };
+		4DCF5FBE1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppleICloudAndLocalDocumentHybridProvider.m; sourceTree = "<group>"; };
 		4DD59F731D3A6FC800F864ED /* secrets.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = secrets.h; sourceTree = "<group>"; };
 		4DE229A01ED8A102000FDC3D /* DropboxV2StorageProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DropboxV2StorageProvider.h; sourceTree = "<group>"; };
 		4DE229A11ED8A102000FDC3D /* DropboxV2StorageProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DropboxV2StorageProvider.m; sourceTree = "<group>"; };
@@ -236,8 +239,8 @@
 				4D1757AE1C8361D300E6356F /* SafeStorageProvider.m */,
 				4D40EEEF1ED878DB006532F8 /* StorageBrowserItem.h */,
 				4D40EEF01ED878DB006532F8 /* StorageBrowserItem.m */,
-				4DCF5FBD1F7299DD00011756 /* AppleICloudProvider.h */,
-				4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */,
+				4DCF5FBD1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.h */,
+				4DCF5FBE1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.m */,
 			);
 			name = StorageProviders;
 			sourceTree = "<group>";
@@ -347,6 +350,8 @@
 				4D1757A21C8361D200E6356F /* main.m */,
 				4D55F0D61EE2BFF400C43B26 /* TextFieldAutoSuggest.h */,
 				4D55F0D71EE2BFF400C43B26 /* TextFieldAutoSuggest.m */,
+				4D3D991A1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.h */,
+				4D3D991B1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.m */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -527,6 +532,7 @@
 				4D92C7FF1F388DFF00341A58 /* crypt_argchk.c in Sources */,
 				4DD59F541D3A5A7300F864ED /* main.m in Sources */,
 				4D915D741EDC068D002615F6 /* PasswordHistoryViewController.m in Sources */,
+				4D3D991C1F77FA1500E829B6 /* AppleICloudOrLocalSafeFile.m in Sources */,
 				4D6C51981F6407580035640E /* SafeDetailsView.m in Sources */,
 				4D1398A41F5F0B66002608E4 /* NodeFields.m in Sources */,
 				4DF785FB1EDB319E006D4918 /* SafesCollection.m in Sources */,
@@ -547,7 +553,7 @@
 				4D1757C11C8361D300E6356F /* GoogleDriveStorageProvider.m in Sources */,
 				4DE229A21ED8A102000FDC3D /* DropboxV2StorageProvider.m in Sources */,
 				4D40EEF11ED878DB006532F8 /* StorageBrowserItem.m in Sources */,
-				4DCF5FBF1F7299DD00011756 /* AppleICloudProvider.m in Sources */,
+				4DCF5FBF1F7299DD00011756 /* AppleICloudAndLocalDocumentHybridProvider.m in Sources */,
 				4D92C7F91F388D0900341A58 /* SafeTools.m in Sources */,
 				4D1757CE1C8361D300E6356F /* SelectDestinationGroupController.m in Sources */,
 				4D55F0D81EE2BFF400C43B26 /* TextFieldAutoSuggest.m in Sources */,

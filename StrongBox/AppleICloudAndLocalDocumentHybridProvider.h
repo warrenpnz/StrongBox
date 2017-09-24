@@ -8,12 +8,18 @@
 
 #import <Foundation/Foundation.h>
 #import "SafeStorageProvider.h"
-
-@interface AppleICloudProvider : NSObject <SafeStorageProvider>
+#import "AppleICloudOrLocalSafeFile.h"
+    
+@interface AppleICloudAndLocalDocumentHybridProvider : NSObject <SafeStorageProvider>
 
 + (instancetype)sharedInstance;
 
 - (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion;
+
+- (void)monitorICloudFiles; // TODO: Is there a Point to this?
+
+- (void)migrateLocalToiCloud;
+- (void)migrateiCloudToLocal;
 
 @property (strong, nonatomic, readonly) NSString *displayName;
 @property (strong, nonatomic, readonly) NSString *icon;
@@ -21,6 +27,9 @@
 @property (nonatomic, readonly) BOOL cloudBased;
 @property (nonatomic, readonly) BOOL providesIcons;
 @property (nonatomic, readonly) BOOL browsable;
+
+
+@property (nonatomic, copy) void (^filesUpdatesListener)(NSArray<AppleICloudOrLocalSafeFile*>* filesMetadata);
 
 - (void)delete:(SafeMetaData*)safeMetaData
     completion:(void (^)(NSError *error))completion;

@@ -16,7 +16,7 @@
 #import "PasswordDatabase.h"
 #import "Alerts.h"
 #import "StorageBrowserTableViewController.h"
-#import "AppleICloudProvider.h"
+#import "AppleICloudAndLocalDocumentHybridProvider.h"
 
 @interface SelectStorageProviderController ()
 
@@ -30,10 +30,10 @@
     [super viewWillAppear:animated];
     
     if(self.existing) {
-        [self.navigationItem setPrompt:@"Select where your safe is stored"];
+        [self.navigationItem setPrompt:@"Select where your existing safe is stored"];
     }
     else {
-        [self.navigationItem setPrompt:@"Select where you would like to store your new safe"];
+        [self.navigationItem setPrompt:@"Select what kind of safe you would like to create"];
     }
 }
 
@@ -47,10 +47,11 @@
                            [DropboxV2StorageProvider sharedInstance]];
     }
     else {
-        self.providers = @[[GoogleDriveStorageProvider sharedInstance],
+        self.providers = @[[AppleICloudAndLocalDocumentHybridProvider sharedInstance],
+                           [GoogleDriveStorageProvider sharedInstance],
                            [DropboxV2StorageProvider sharedInstance],
-                           [AppleICloudProvider sharedInstance],
-                           [LocalDeviceStorageProvider sharedInstance]];
+//                           [LocalDeviceStorageProvider sharedInstance]
+                           ];
     }
 }
 
