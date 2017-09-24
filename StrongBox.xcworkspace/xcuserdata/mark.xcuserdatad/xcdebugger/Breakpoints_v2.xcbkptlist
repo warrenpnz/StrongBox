@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "StrongBox/SafesViewController.m"
-            timestampString = "527877540.058329"
+            timestampString = "527939341.555442"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "993"
-            endingLineNumber = "993"
+            startingLineNumber = "982"
+            endingLineNumber = "982"
             landmarkName = "-bindProOrFreeTrialUi"
             landmarkType = "7">
          </BreakpointContent>
@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "StrongBox/SafesViewController.m"
-            timestampString = "527877540.058787"
+            timestampString = "527939341.555757"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "541"
-            endingLineNumber = "541"
+            startingLineNumber = "530"
+            endingLineNumber = "530"
             landmarkName = "-onProviderReadDone:isTouchIdOpen:safe:masterPassword:data:error:isOfflineCacheMode:askAboutTouchIdEnrol:"
             landmarkType = "7">
          </BreakpointContent>

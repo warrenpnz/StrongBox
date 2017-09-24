@@ -28,7 +28,6 @@
 #import <PopupDialog/PopupDialog-Swift.h>
 #import "AppleICloudProvider.h"
 #import "Strongbox.h"
-#import "SafeItem.h"
 
 #define kTouchId911Limit 5
 
@@ -229,17 +228,6 @@
     return removed;
 }
 
-//
-//-(SafeMetaData*)getAppleICloudSafeMetaDataByFileName:(NSString*)fileName {
-//    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
-//        if(safe.storageProvider == kiCloud && [fileName isEqualToString:safe.fileName]) {
-//            return safe;
-//        }
-//    }
-//
-//    return nil;
-//}
-
 - (void)iCloudFileConflictBetweenCloudFile:(NSDictionary *)cloudFile andLocalFile:(NSDictionary *)localFile {
     NSLog(@"iCloudFileConflictBetweenCloudFile");
 }
@@ -388,7 +376,8 @@
     NSString *message;
     
     if(safe.storageProvider == kiCloud) {
-        message = @"Are you sure you want to remove this safe from Strongbox and iCloud?";
+        message = @"This will remove the document from all your iCloud enabled devices.\n\n"
+                    @"Are you sure you want to remove this safe from Strongbox and iCloud?";
     }
     else {
         message = [NSString stringWithFormat:@"Are you sure you want to remove this safe from Strongbox?%@",
