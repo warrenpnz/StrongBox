@@ -619,6 +619,7 @@
                         <outlet property="buttonAbout" destination="0iU-LP-tWR" id="kUD-ht-Ckh"/>
                         <outlet property="buttonSignoutGoogleDrive" destination="IZF-YV-e8C" id="l5d-gK-M73"/>
                         <outlet property="buttonUnlinkDropbox" destination="tId-nx-yfD" id="lrZ-RX-mXG"/>
+                        <outlet property="labelUseICloud" destination="KYS-WM-c5c" id="Wcd-FU-tW7"/>
                         <outlet property="segmentAutoLock" destination="MX1-vC-ZCZ" id="Umy-es-bOQ"/>
                         <outlet property="switchLongTouchCopy" destination="i8j-Hp-u4I" id="f9s-5U-4id"/>
                         <outlet property="switchShowPasswordOnDetails" destination="BR8-ug-Otf" id="fas-EC-Hgu"/>

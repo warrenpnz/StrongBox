@@ -23,6 +23,7 @@
 @property (weak, nonatomic) IBOutlet UISwitch *switchShowPasswordOnDetails;
 @property (weak, nonatomic) IBOutlet UIButton *buttonAbout;
 
+@property (weak, nonatomic) IBOutlet UILabel *labelUseICloud;
 @property (weak, nonatomic) IBOutlet UISwitch *switchUseICloud;
 @property (weak, nonatomic) IBOutlet UIButton *buttonSignoutGoogleDrive;
 @property (weak, nonatomic) IBOutlet UIButton *buttonUnlinkDropbox;

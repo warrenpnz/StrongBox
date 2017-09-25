@@ -28,7 +28,6 @@
 @property (nonatomic, readonly) BOOL providesIcons;
 @property (nonatomic, readonly) BOOL browsable;
 
-
 @property (nonatomic, copy) void (^filesUpdatesListener)(NSArray<AppleICloudOrLocalSafeFile*>* filesMetadata);
 
 - (void)delete:(SafeMetaData*)safeMetaData

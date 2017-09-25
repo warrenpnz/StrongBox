@@ -73,7 +73,11 @@
 }
 
 - (void)bindUseICloud {
-    self.switchUseICloud.on = [[Settings sharedInstance] iCloudOn];
+    self.switchUseICloud.on = [[Settings sharedInstance] iCloudOn] && Settings.sharedInstance.iCloudAvailable;
+    self.switchUseICloud.enabled = Settings.sharedInstance.iCloudAvailable;
+    
+    self.labelUseICloud.text = Settings.sharedInstance.iCloudAvailable ? @"Use iCloud" : @"Use iCloud (Unavailable)";
+    self.labelUseICloud.enabled = Settings.sharedInstance.iCloudAvailable;
 }
 
 - (void)bindLongTouchCopy {

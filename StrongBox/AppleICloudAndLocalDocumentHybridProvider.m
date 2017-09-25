@@ -16,7 +16,6 @@
 #define FILE_EXTENSION @"psafe3"
 
 NSURL * _iCloudRoot;
-NSURL * _localRoot;
 NSMetadataQuery * _query;
 BOOL _iCloudURLsReady;
 NSMutableArray<AppleICloudOrLocalSafeFile*> * _iCloudFiles;
@@ -54,11 +53,26 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
 }
 
 - (NSString *)displayName {
-    return Settings.sharedInstance.iCloudOn ? @"iCloud" : @"Local Document";
+    return Settings.sharedInstance.iCloudOn ? @"iCloud" : @"Local Device";
 }
 
 - (NSString *)icon {
     return Settings.sharedInstance.iCloudOn ? @"icloud-32" : @"phone";
+}
+
+- (NSURL *)localRoot { 
+    NSArray * paths = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
+//
+//    NSArray * localDocuments = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:paths.lastObject includingPropertiesForKeys:nil options:0 error:nil];
+//
+//    for (int i=0; i < localDocuments.count; i++) {
+//        NSURL * fileURL = [localDocuments objectAtIndex:i];
+//        NSLog(@"%@", fileURL);
+//    }
+    
+    //NSLog(@"LOCAL => %@" , paths.lastObject);
+    
+    return paths.lastObject;
 }
 
 - (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion {
@@ -77,16 +91,6 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
             });
         }
     });
-}
-
-- (NSURL *)localRoot {
-    if (_localRoot != nil) {
-        return _localRoot;
-    }
-    
-    NSArray * paths = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
-    _localRoot = [paths objectAtIndex:0];
-    return _localRoot;
 }
 
 - (void)    create:(NSString *)nickName
@@ -112,12 +116,17 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
         
         NSLog(@"File created at %@", fileURL);
     
+        [doc closeWithCompletionHandler:^(BOOL success) {
+            if (!success) {
+                NSLog(@"Failed to close %@", fileURL);
+            }
+        }];
+        
         SafeMetaData * metadata = [[SafeMetaData alloc] initWithNickName:nickName
                                                          storageProvider:kiCloud
                                                                 fileName:[fileURL lastPathComponent]
                                                           fileIdentifier:[fileURL absoluteString]];
         
-    
         completion(metadata, nil);
     }];
 }
@@ -169,7 +178,13 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
         
         NSLog(@"File updated at %@", fileUrl);
         
-        completion(nil);
+        [doc closeWithCompletionHandler:^(BOOL success) {
+            if (!success) {
+                NSLog(@"Failed to close %@", fileUrl);
+            }
+            
+            completion(nil);
+        }];
     }];
 }
 
@@ -396,6 +411,8 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
                 NSError * error;
                 BOOL success = [fileManager copyItemAtURL:file.fileUrl toURL:destURL error:&error];
                 
+                //BOOL success = [fileManager setUbiquitous:NO itemAtURL:file.fileUrl destinationURL:destURL error:&error];
+
                 if (success) {
                     AppleICloudOrLocalSafeFile *localSafeFile =
                     [[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:[self displayNameFromUrl:destURL] fileUrl:destURL hasUnresolvedConflicts:NO];

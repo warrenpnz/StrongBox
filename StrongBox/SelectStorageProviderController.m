@@ -50,7 +50,7 @@
         self.providers = @[[AppleICloudAndLocalDocumentHybridProvider sharedInstance],
                            [GoogleDriveStorageProvider sharedInstance],
                            [DropboxV2StorageProvider sharedInstance],
-//                           [LocalDeviceStorageProvider sharedInstance]
+                           [LocalDeviceStorageProvider sharedInstance]
                            ];
     }
 }

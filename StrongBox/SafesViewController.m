@@ -41,8 +41,6 @@
 
 @end
 
-BOOL _iCloudAvailable; // TODO:
-
 @implementation SafesViewController
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -59,24 +57,6 @@ BOOL _iCloudAvailable; // TODO:
     [self checkICloudAvailability];
     
     [self refreshView];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(documentStateChanged:)
-                                                 name:UIDocumentStateChangedNotification
-                                               object:nil];
-}
-
-//- (void)viewWillDisappear:(BOOL)animated {
-//    // TODO: For Above Notification [[NSNotificationCenter defaultCenter] removeObserver:self];
-//}
-
-// TODO:
-- (void)documentStateChanged:(NSNotification *)notificaiton {
-    NSLog(@"*********************************************************************************************************");
-    
-    NSLog(@"documentStateChanged: %@", notificaiton);
-    
-    NSLog(@"*********************************************************************************************************");
 }
 
 - (void)refreshView {
@@ -135,19 +115,19 @@ BOOL _iCloudAvailable; // TODO:
 
 - (void)checkICloudAvailability {
     [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
-        _iCloudAvailable = available;
+        Settings.sharedInstance.iCloudAvailable = available;
         
-        if (!_iCloudAvailable) {
+        if (!Settings.sharedInstance.iCloudAvailable) {
             // If iCloud isn't available, set promoted to no (so we can ask them next time it becomes available)
             [Settings sharedInstance].iCloudPrompted = NO;
             
-            if ([[Settings sharedInstance] iCloudWasOn]) {
+            if ([[Settings sharedInstance] iCloudWasOn] &&  [self getICloudOrLocalHybridSafes].count) {
                 [Alerts warn:self
-                       title:@"You're Not Using iCloud"
-                     message:@"Your documents were removed from this device but remain stored in iCloud."];
+                       title:@"iCloud no longer available"
+                     message:@"Some safes were removed from this device because iCloud has become unavailable, but they remain stored in iCloud."];
+                
+                [self removeAllICloudSafes];
             }
-        
-            // TODO:
             
             // No matter what, iCloud isn't available so switch it to off.???
             [Settings sharedInstance].iCloudOn = NO;
@@ -162,7 +142,9 @@ BOOL _iCloudAvailable; // TODO:
                         title:@"iCloud is Available"
                       message:@"Automatically store your local documents in the cloud to keep them up-to-date across all your devices?"
                        action:^(BOOL response) {
-                           [Settings sharedInstance].iCloudOn = YES;
+                           if(response) {
+                               [Settings sharedInstance].iCloudOn = YES;
+                           }
                            [self continueICloudAvailableProcedure];
                        }];
             }
@@ -460,7 +442,7 @@ BOOL _iCloudAvailable; // TODO:
     NSString *message;
     
     if(safe.storageProvider == kiCloud && [Settings sharedInstance].iCloudOn) {
-        message = @"This will remove the document from all your iCloud enabled devices.\n\n"
+        message = @"This will remove the safe from all your iCloud enabled devices.\n\n"
                     @"Are you sure you want to remove this safe from Strongbox and iCloud?";
     }
     else {
