@@ -89,6 +89,112 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     return _localRoot;
 }
 
+- (void)    create:(NSString *)nickName
+              data:(NSData *)data
+      parentFolder:(NSObject *)parentFolder
+    viewController:(UIViewController *)viewController
+        completion:(void (^)(SafeMetaData *metadata, NSError *error))completion {
+
+    NSURL * fileURL = [self getDocURL:[self getDocFilename:nickName uniqueInObjects:YES]];
+    
+    NSLog(@"Want to create file at %@", fileURL);
+    
+    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithData:data fileUrl:fileURL];
+    
+    NSLog(@"Loaded File URL: %@ in state: [%@]", [doc.fileURL lastPathComponent], [self stringForDocumentState:doc.documentState]);
+
+    [doc saveToURL:fileURL forSaveOperation:UIDocumentSaveForCreating completionHandler:^(BOOL success) {
+        if (!success) {
+            NSLog(@"Failed to create file at %@", fileURL);
+            completion(nil, [Utils createNSError:@"Failed to create file" errorCode:-5]);
+            return;
+        }
+        
+        NSLog(@"File created at %@", fileURL);
+    
+        SafeMetaData * metadata = [[SafeMetaData alloc] initWithNickName:nickName
+                                                         storageProvider:kiCloud
+                                                                fileName:[fileURL lastPathComponent]
+                                                          fileIdentifier:[fileURL absoluteString]];
+        
+    
+        completion(metadata, nil);
+    }];
+}
+
+- (void)      read:(SafeMetaData *)safeMetaData
+    viewController:(UIViewController *)viewController
+        completion:(void (^)(NSData *data, NSError *error))completion {
+    NSURL *fileUrl = [NSURL URLWithString:safeMetaData.fileIdentifier];
+    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithFileURL:fileUrl];
+    
+    [doc openWithCompletionHandler:^(BOOL success) {
+        if (!success) {
+            NSLog(@"Failed to open %@", fileUrl);
+            completion(nil, [Utils createNSError:@"Failed to open" errorCode:-6]);
+            return;
+        }
+
+        NSLog(@"Loaded File URL: %@ in state: [%@]", [doc.fileURL lastPathComponent], [self stringForDocumentState:doc.documentState]);
+        
+        NSData* data = doc.data;
+        
+        [doc closeWithCompletionHandler:^(BOOL success) {
+            if (!success) {
+                NSLog(@"Failed to open %@", fileUrl);
+                completion(nil, [Utils createNSError:@"Failed to close after reading" errorCode:-6]);
+                return;
+            }
+            
+            completion(data, nil);
+        }];
+    }];
+}
+
+- (void)update:(SafeMetaData *)safeMetaData
+          data:(NSData *)data
+    completion:(void (^)(NSError *error))completion {
+    NSURL *fileUrl = [NSURL URLWithString:safeMetaData.fileIdentifier];
+    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithFileURL:fileUrl];
+    doc.data = data;
+    
+    NSLog(@"Opened File URL: %@ in state: [%@]", [doc.fileURL lastPathComponent], [self stringForDocumentState:doc.documentState]);
+
+    [doc saveToURL:fileUrl forSaveOperation:UIDocumentSaveForOverwriting completionHandler:^(BOOL success) {
+        if (!success) {
+            NSLog(@"Failed to update file at %@", fileUrl);
+            completion([Utils createNSError:@"Failed to update file" errorCode:-5]);
+            return;
+        }
+        
+        NSLog(@"File updated at %@", fileUrl);
+        
+        completion(nil);
+    }];
+}
+
+- (void)delete:(SafeMetaData*)safeMetaData completion:(void (^)(NSError *error))completion {
+    if(safeMetaData.storageProvider != kiCloud) {
+        NSLog(@"Safe is not an Apple iCloud safe!");
+        return;
+    }
+ 
+    NSURL *url = [NSURL URLWithString:safeMetaData.fileIdentifier];
+    
+    // Wrap in file coordinator
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+        NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+        [fileCoordinator coordinateWritingItemAtURL:url
+                                            options:NSFileCoordinatorWritingForDeleting
+                                              error:nil
+                                         byAccessor:^(NSURL* writingURL) {
+                                             NSFileManager* fileManager = [[NSFileManager alloc] init];
+                                             [fileManager removeItemAtURL:url error:nil];
+                                         }];
+    });
+}
+
+
 - (NSMetadataQuery *)documentQuery {
     NSMetadataQuery * query = [[NSMetadataQuery alloc] init];
     
@@ -118,7 +224,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     
     _iCloudURLsReady = NO;
     [_iCloudFiles removeAllObjects];
-
+    
     NSLog(@"Starting to watch iCloud dir...");
     
     _query = [self documentQuery];
@@ -140,26 +246,71 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     return [url.lastPathComponent stringByDeletingPathExtension];
 }
 
-- (void)processiCloudFiles:(NSNotification *)notification {
-    // Always disable updates while processing results
+- (void)logAllCloudStorageKeysForMetadataItem:(NSMetadataItem *)item
+{
+    NSString* displayName = [item valueForAttribute:NSMetadataItemDisplayNameKey];
+    NSDate* contentChangeDate = [item valueForAttribute:NSMetadataItemFSContentChangeDateKey];
+    NSNumber *isUbiquitous = [item valueForAttribute:NSMetadataItemIsUbiquitousKey];
+    NSNumber *hasUnresolvedConflicts = [item valueForAttribute:NSMetadataUbiquitousItemHasUnresolvedConflictsKey];
+    NSNumber *downloadStatus = [item valueForAttribute:NSMetadataUbiquitousItemDownloadingStatusKey];
+    NSNumber *isUploaded = [item valueForAttribute:NSMetadataUbiquitousItemIsUploadedKey];
+    NSNumber *isUploading = [item valueForAttribute:NSMetadataUbiquitousItemIsUploadingKey];
+    NSNumber *percentDownloaded = [item valueForAttribute:NSMetadataUbiquitousItemPercentDownloadedKey];
+    NSNumber *percentUploaded = [item valueForAttribute:NSMetadataUbiquitousItemPercentUploadedKey];
+    NSURL *url = [item valueForAttribute:NSMetadataItemURLKey];
     
+    NSNumber * hidden = nil;
+    [url getResourceValue:&hidden forKey:NSURLIsHiddenKey error:nil];
+    
+    //BOOL documentExists = [[NSFileManager defaultManager] fileExistsAtPath:[url path]];
+    
+    NSLog(@"%@ change:%@ hidden:%@ isUbiquitous:%@ hasUnresolvedConflicts:%@ downloadStatus:%@(%@%%) isUploaded:%@ isUploading:%@ (%@%%) - %@",
+          displayName, contentChangeDate, hidden, isUbiquitous, hasUnresolvedConflicts, downloadStatus, percentDownloaded, isUploaded, isUploading, percentUploaded, url);
+}
+
+- (void)processiCloudFiles:(NSNotification *)notification {
     [_query disableUpdates];
     [_iCloudFiles removeAllObjects];
     
     // The query reports all files found, every time.
     
+    NSLog(@"*********************************************************************************************************");
+    
+    NSArray* added = [notification.userInfo objectForKey:NSMetadataQueryUpdateAddedItemsKey];
+    NSArray* changed = [notification.userInfo objectForKey:NSMetadataQueryUpdateChangedItemsKey];
+    NSArray* removed = [notification.userInfo objectForKey:NSMetadataQueryUpdateRemovedItemsKey];
+    
+    NSLog(@"+%lu /%lu -%lu", (unsigned long)added.count, (unsigned long)changed.count, (unsigned long)removed.count);
+    
+    for(NSMetadataItem *item in changed) {
+        NSLog(@"Changed: %@", item);
+    }
+    
+    NSLog(@"*********************************************************************************************************");
+    
     NSArray<NSMetadataItem*> * queryResults = [_query results];
+    
     for (NSMetadataItem * result in queryResults) {
         NSURL * fileURL = [result valueForAttribute:NSMetadataItemURLKey];
-        NSNumber * aBool = nil;
+        
+        [self logAllCloudStorageKeysForMetadataItem:result];
         
         // Don't include hidden files
-        [fileURL getResourceValue:&aBool forKey:NSURLIsHiddenKey error:nil];
-        if (aBool && ![aBool boolValue]) {
+        
+        NSNumber * hidden = nil;
+        [fileURL getResourceValue:&hidden forKey:NSURLIsHiddenKey error:nil];
+        
+        if (hidden == nil || ![hidden boolValue]) {
             NSString* displayName = [result valueForAttribute:NSMetadataItemDisplayNameKey];
-            [_iCloudFiles addObject:[[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:displayName ? displayName : [self displayNameFromUrl:fileURL] fileUrl:fileURL]];
+            NSString* dn = displayName ? displayName : [self displayNameFromUrl:fileURL];
+
+            NSNumber *hasUnresolvedConflicts = [result valueForAttribute:NSMetadataUbiquitousItemHasUnresolvedConflictsKey];
+            BOOL huc = hasUnresolvedConflicts ? [hasUnresolvedConflicts boolValue] : NO;
+            
+            [_iCloudFiles addObject:[[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:dn fileUrl:fileURL hasUnresolvedConflicts:huc]];
         }
     }
+    NSLog(@"*********************************************************************************************************");
     
     NSLog(@"Found %lu iCloud files.", (unsigned long)_iCloudFiles.count);
     
@@ -168,9 +319,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     if ([Settings sharedInstance].iCloudOn) {
         self.filesUpdatesListener(_iCloudFiles);
     }
-        
-    // Should we move local to iCloud?
-
+    
     if (_pleaseMoveLocalToiCloudWhenReady) {
         _pleaseMoveLocalToiCloudWhenReady = NO;
         [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] localToiCloudImpl];
@@ -179,18 +328,16 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
         _pleaseCopyiCloudToLocalWhenReady = NO;
         [self iCloudToLocalImpl];
     }
-
+    
     [_query enableUpdates];
 }
 
 - (void)migrateLocalToiCloud {
     NSLog(@"local => iCloud");
-
-    // If we have a valid list of iCloud files, proceed
+    
     if (_iCloudURLsReady) {
         [self localToiCloudImpl];
     }
-    // Have to wait for list of iCloud files to refresh
     else {
         _pleaseMoveLocalToiCloudWhenReady = YES;
     }
@@ -207,11 +354,16 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
 - (void)localToiCloudImpl {
     NSLog(@"local => iCloud impl");
     NSArray * localDocuments = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:self.localRoot includingPropertiesForKeys:nil options:0 error:nil];
-   
+    
     for (int i=0; i < localDocuments.count; i++) {
         NSURL * fileURL = [localDocuments objectAtIndex:i];
         if ([[fileURL pathExtension] isEqualToString:FILE_EXTENSION]) {
-            NSString * displayName = [[[fileURL lastPathComponent] stringByDeletingPathExtension] stringByAppendingString:@"-Migrated"];
+            NSString * displayName = [[fileURL lastPathComponent] stringByDeletingPathExtension];
+            
+            if([self docNameExistsIniCloudURLs:[self docNameFromDisplayName:displayName]]) {
+                displayName = [displayName stringByAppendingString:@"-Migrated"];
+            }
+            
             NSURL *destURL = [self getDocURL:[self getDocFilename:displayName uniqueInObjects:NO]];
             
             // Perform actual move in background thread
@@ -238,26 +390,23 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
         for (AppleICloudOrLocalSafeFile *file in safesCollectionCopy) {
             NSURL *destURL = [self getDocURL:[self getDocFilename:file.displayName uniqueInObjects:YES]];
             
-            // Perform copy on background thread
-
-                NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-                [fileCoordinator coordinateReadingItemAtURL:file.fileUrl options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
-                    NSFileManager * fileManager = [[NSFileManager alloc] init];
-                    NSError * error;
-                    BOOL success = [fileManager copyItemAtURL:file.fileUrl toURL:destURL error:&error];
+            NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+            [fileCoordinator coordinateReadingItemAtURL:file.fileUrl options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
+                NSFileManager * fileManager = [[NSFileManager alloc] init];
+                NSError * error;
+                BOOL success = [fileManager copyItemAtURL:file.fileUrl toURL:destURL error:&error];
+                
+                if (success) {
+                    AppleICloudOrLocalSafeFile *localSafeFile =
+                    [[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:[self displayNameFromUrl:destURL] fileUrl:destURL hasUnresolvedConflicts:NO];
                     
-                    if (success) {
-                        AppleICloudOrLocalSafeFile *localSafeFile =
-                            [[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:[self displayNameFromUrl:destURL]
-                                                                        fileUrl:destURL];
-                        
-                        [updatedFiles addObject:localSafeFile];
-                        
-                        NSLog(@"Copied %@ to %@ (%d)", file.fileUrl, destURL, [Settings sharedInstance].iCloudOn);
-                    } else {
-                        NSLog(@"Failed to copy %@ to %@: %@", file.fileUrl, destURL, error.localizedDescription);
-                    }
-                }];
+                    [updatedFiles addObject:localSafeFile];
+                    
+                    NSLog(@"Copied %@ to %@ (%d)", file.fileUrl, destURL, [Settings sharedInstance].iCloudOn);
+                } else {
+                    NSLog(@"Failed to copy %@ to %@: %@", file.fileUrl, destURL, error.localizedDescription);
+                }
+            }];
         }
         
         self.filesUpdatesListener(updatedFiles);
@@ -271,6 +420,10 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     } else {
         return [self.localRoot URLByAppendingPathComponent:filename];
     }
+}
+
+- (NSString*)docNameFromDisplayName:(NSString*)displayName {
+    return [NSString stringWithFormat:@"%@.%@", displayName, FILE_EXTENSION];
 }
 
 - (BOOL)docNameExistsIniCloudURLs:(NSString *)docName {
@@ -313,7 +466,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
             newDocName = [NSString stringWithFormat:@"%@ %ld.%@",
                           prefix, (long)docCount, FILE_EXTENSION];
         }
-
+        
         BOOL nameExists;
         if (uniqueInObjects) {
             nameExists = [self docNameExistsInObjects:newDocName];
@@ -331,129 +484,31 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     return newDocName;
 }
 
-- (void)    create:(NSString *)nickName
-              data:(NSData *)data
-      parentFolder:(NSObject *)parentFolder
-    viewController:(UIViewController *)viewController
-        completion:(void (^)(SafeMetaData *metadata, NSError *error))completion {
-
-    NSURL * fileURL = [self getDocURL:[self getDocFilename:nickName uniqueInObjects:YES]];
-    
-    NSLog(@"Want to create file at %@", fileURL);
-    
-    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithData:data fileUrl:fileURL];
-    
-    [doc saveToURL:fileURL forSaveOperation:UIDocumentSaveForCreating completionHandler:^(BOOL success) {
-        if (!success) {
-            NSLog(@"Failed to create file at %@", fileURL);
-            completion(nil, [Utils createNSError:@"Failed to create file" errorCode:-5]);
-            return;
-        }
-        
-        NSLog(@"File created at %@", fileURL);
-    
-        SafeMetaData * metadata = [[SafeMetaData alloc] initWithNickName:nickName
-                                                         storageProvider:kiCloud
-                                                                fileName:[fileURL lastPathComponent]
-                                                          fileIdentifier:[fileURL absoluteString]];
-        
-    
-        completion(metadata, nil);
-    }];
-}
-
-
-- (void)      read:(SafeMetaData *)safeMetaData
-    viewController:(UIViewController *)viewController
-        completion:(void (^)(NSData *data, NSError *error))completion {
-    NSURL *fileUrl = [NSURL URLWithString:safeMetaData.fileIdentifier];
-    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithFileURL:fileUrl];
-    
-    [doc openWithCompletionHandler:^(BOOL success) {
-        if (!success) {
-            NSLog(@"Failed to open %@", fileUrl);
-            completion(nil, [Utils createNSError:@"Failed to open" errorCode:-6]);
-            return;
-        }
-
-        NSLog(@"Loaded File URL: %@", [doc.fileURL lastPathComponent]);
-        
-        NSData* data = doc.data;
-        
-        [doc closeWithCompletionHandler:^(BOOL success) {
-            if (!success) {
-                NSLog(@"Failed to open %@", fileUrl);
-                completion(nil, [Utils createNSError:@"Failed to close after reading" errorCode:-6]);
-                return;
-            }
-            
-            completion(data, nil);
-        }];
-    }];
-}
-
-
-
-
-
-- (void)update:(SafeMetaData *)safeMetaData
-          data:(NSData *)data
-    completion:(void (^)(NSError *error))completion {
-    NSURL *fileUrl = [NSURL URLWithString:safeMetaData.fileIdentifier];
-    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithFileURL:fileUrl];
-    doc.data = data;
-    
-    [doc saveToURL:fileUrl forSaveOperation:UIDocumentSaveForOverwriting completionHandler:^(BOOL success) {
-        if (!success) {
-            NSLog(@"Failed to update file at %@", fileUrl);
-            completion([Utils createNSError:@"Failed to update file" errorCode:-5]);
-            return;
-        }
-        
-        NSLog(@"File updated at %@", fileUrl);
-        
-        completion(nil);
-    }];
-}
-
-
-
-- (void)delete:(SafeMetaData*)safeMetaData
-    completion:(void (^)(NSError *error))completion {
-    if(safeMetaData.storageProvider != kiCloud) {
-        NSLog(@"Safe is not an Apple iCloud safe!");
-        return;
+- (NSString *)stringForDocumentState:(UIDocumentState)state {
+    NSMutableArray * states = [NSMutableArray array];
+    if (state == 0) {
+        [states addObject:@"Normal"];
     }
- 
-    NSURL *url = [NSURL URLWithString:safeMetaData.fileIdentifier];
-    
-    // Wrap in file coordinator
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-        [fileCoordinator coordinateWritingItemAtURL:url
-                                            options:NSFileCoordinatorWritingForDeleting
-                                              error:nil
-                                         byAccessor:^(NSURL* writingURL) {
-                                             NSFileManager* fileManager = [[NSFileManager alloc] init];
-                                             [fileManager removeItemAtURL:url error:nil];
-                                         }];
-    });
+    if (state & UIDocumentStateClosed) {
+        [states addObject:@"Closed"];
+    }
+    if (state & UIDocumentStateInConflict) {
+        [states addObject:@"In Conflict"];
+    }
+    if (state & UIDocumentStateSavingError) {
+        [states addObject:@"Saving error"];
+    }
+    if (state & UIDocumentStateEditingDisabled) {
+        [states addObject:@"Editing disabled"];
+    }
+    return [states componentsJoinedByString:@", "];
 }
 
 - (void)      list:(NSObject *)parentFolder
     viewController:(UIViewController *)viewController
         completion:(void (^)(NSArray<StorageBrowserItem *> *items, NSError *error))completion {
     // NOTIMPL
-//
-//    NSArray * localDocuments = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:self.localRoot includingPropertiesForKeys:nil options:0 error:nil];
-//
-//    NSLog(@"Found %lu local files.", (unsigned long)localDocuments.count);
-//
-//    for (int i=0; i < localDocuments.count; i++) {
-//        NSURL * fileURL = [localDocuments objectAtIndex:i];
-//        NSLog(@"Found local file: %@", fileURL);
-//
-//    }
+    NSLog(@"NOTIMPL: list");
 }
 
 - (void)readWithProviderData:(NSObject *)providerData

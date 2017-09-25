@@ -28,6 +28,8 @@
 #import <PopupDialog/PopupDialog-Swift.h>
 #import "AppleICloudAndLocalDocumentHybridProvider.h"
 #import "Strongbox.h"
+#import "SafeItemTableCell.h"
+#import "VersionConflictController.h"
 
 #define kTouchId911Limit 5
 
@@ -57,6 +59,24 @@ BOOL _iCloudAvailable; // TODO:
     [self checkICloudAvailability];
     
     [self refreshView];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(documentStateChanged:)
+                                                 name:UIDocumentStateChangedNotification
+                                               object:nil];
+}
+
+//- (void)viewWillDisappear:(BOOL)animated {
+//    // TODO: For Above Notification [[NSNotificationCenter defaultCenter] removeObserver:self];
+//}
+
+// TODO:
+- (void)documentStateChanged:(NSNotification *)notificaiton {
+    NSLog(@"*********************************************************************************************************");
+    
+    NSLog(@"documentStateChanged: %@", notificaiton);
+    
+    NSLog(@"*********************************************************************************************************");
 }
 
 - (void)refreshView {
@@ -100,6 +120,7 @@ BOOL _iCloudAvailable; // TODO:
         return item.storageProvider == kiCloud;
     }]];
 }
+
 - (void)removeAllICloudSafes {
     NSArray<SafeMetaData*> *icloudSafesToRemove = [self getICloudOrLocalHybridSafes];
     
@@ -173,6 +194,10 @@ BOOL _iCloudAvailable; // TODO:
                         if(response == 2) {           // @"Switch iCloud Back On"
                             [Settings sharedInstance].iCloudOn = YES;
                             [Settings sharedInstance].iCloudWasOn = [Settings sharedInstance].iCloudOn;
+                            
+                            dispatch_async(dispatch_get_main_queue(), ^(void) {
+                                [self refreshView];
+                            });
                         }
                         else if(response == 1) {      // @"Keep a Local Copy"
                             [self removeAllICloudSafes];
@@ -189,14 +214,38 @@ BOOL _iCloudAvailable; // TODO:
 }
 
 - (void)iCloudFilesDidChange:(NSArray<AppleICloudOrLocalSafeFile*>*)files {
-    BOOL added = [self addAnyNewICloudSafes:files];
     BOOL removed = [self removeAnyDeletedICloudSafes:files];
+    BOOL updated = [self updateAnyICloudSafes:files];
+    BOOL added = [self addAnyNewICloudSafes:files];
 
-    if(added || removed) {
+    if(added || removed || updated) {
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             [self refreshView];
         });
     }
+}
+
+- (BOOL)updateAnyICloudSafes:(NSArray<AppleICloudOrLocalSafeFile*> *)files {
+    BOOL updated = NO;
+    
+    NSMutableDictionary<NSString*, AppleICloudOrLocalSafeFile*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
+    NSDictionary<NSString*, SafeMetaData*>* mine = [self getAllMyICloudSafeFileNames];
+    
+    for(NSString* fileName in mine.allKeys) {
+        AppleICloudOrLocalSafeFile *match = [theirs objectForKey:fileName];
+    
+        if(match) {
+            [mine objectForKey:fileName].fileIdentifier = [match.fileUrl absoluteString];
+            [mine objectForKey:fileName].hasUnresolvedConflicts = match.hasUnresolvedConflicts;
+            updated = YES;
+        }
+    }
+
+    if(updated) {
+        [[SafesCollection sharedInstance] save];
+    }
+    
+    return updated;
 }
 
 -(BOOL)addAnyNewICloudSafes:(NSArray<AppleICloudOrLocalSafeFile*> *)files {
@@ -215,7 +264,8 @@ BOOL _iCloudAvailable; // TODO:
         NSString *displayName = safeFile.displayName;
 
         SafeMetaData *newSafe = [[SafeMetaData alloc] initWithNickName:displayName storageProvider:kiCloud fileName:fileName fileIdentifier:[safeFile.fileUrl absoluteString]];
-
+        newSafe.hasUnresolvedConflicts = safeFile.hasUnresolvedConflicts;
+        
         NSLog(@"Got New Safe... Adding [%@]", newSafe);
 
         [[SafesCollection sharedInstance] add:newSafe];
@@ -336,7 +386,7 @@ BOOL _iCloudAvailable; // TODO:
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"reuseIdentifier" forIndexPath:indexPath];
+    SafeItemTableCell *cell = [tableView dequeueReusableCellWithIdentifier:@"reuseIdentifier" forIndexPath:indexPath];
     
     SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
     
@@ -346,6 +396,7 @@ BOOL _iCloudAvailable; // TODO:
     id<SafeStorageProvider> provider = [self getStorageProviderFromProviderId:safe.storageProvider];
     NSString *icon = provider.icon;
     cell.imageView.image = [UIImage imageNamed:icon];
+    cell.imageViewWarningIndicator.hidden = !safe.hasUnresolvedConflicts;
     
     return cell;
 }
@@ -380,7 +431,10 @@ BOOL _iCloudAvailable; // TODO:
     
     SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
     
-    if (safe.isTouchIdEnabled &&
+    if(safe.hasUnresolvedConflicts) {
+        [self performSegueWithIdentifier:@"segueToVersionConflictResolution" sender:safe.fileIdentifier];
+    }
+    else if (safe.isTouchIdEnabled &&
         [IOsUtils isTouchIDAvailable] &&
         safe.isEnrolledForTouchId &&
         ([[Settings sharedInstance] isProOrFreeTrial] || self.touchId911)) {
@@ -705,6 +759,10 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
         if(self.validProducts.count > 0) {
             vc.product = [self.validProducts objectAtIndex:0];
         }
+    }
+    else if ([segue.identifier isEqualToString:@"segueToVersionConflictResolution"]) {
+        VersionConflictController* vc = (VersionConflictController*)segue.destinationViewController;
+        vc.url = (NSString*)sender;
     }
 }
 

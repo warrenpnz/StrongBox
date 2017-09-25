@@ -11,9 +11,13 @@
 @interface AppleICloudOrLocalSafeFile : NSObject
 
 - (instancetype _Nullable )init NS_UNAVAILABLE;
-- (instancetype _Nullable )initWithDisplayName:(NSString*_Nonnull)displayName fileUrl:(NSURL*_Nonnull)fileUrl NS_DESIGNATED_INITIALIZER;
+
+- (instancetype _Nullable )initWithDisplayName:(NSString*_Nonnull)displayName
+                                       fileUrl:(NSURL*_Nonnull)fileUrl
+                        hasUnresolvedConflicts:(BOOL)hasUnresolvedConflicts NS_DESIGNATED_INITIALIZER;
 
 @property (nonatomic, nonnull) NSString* displayName;
 @property (nonatomic, nonnull) NSURL* fileUrl;
+@property (nonatomic) BOOL hasUnresolvedConflicts;
 
 @end

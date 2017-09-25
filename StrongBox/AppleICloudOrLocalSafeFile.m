@@ -10,10 +10,11 @@
 
 @implementation AppleICloudOrLocalSafeFile
 
-- (instancetype)initWithDisplayName:(NSString*)displayName fileUrl:(NSURL*)fileUrl {
+- (instancetype)initWithDisplayName:(NSString*)displayName fileUrl:(NSURL*)fileUrl hasUnresolvedConflicts:(BOOL)hasUnresolvedConflicts {
     if(self = [super init]) {
         self.displayName = displayName;
         self.fileUrl = fileUrl;
+        self.hasUnresolvedConflicts = hasUnresolvedConflicts;
     }
     
     return self;
