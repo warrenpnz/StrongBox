@@ -228,4 +228,9 @@
                                    fileIdentifier:parent];
 }
 
+- (void)delete:(SafeMetaData *)safeMetaData completion:(void (^)(NSError *))completion {
+    // NOTIMPL;
+}
+
+
 @end

@@ -13,6 +13,10 @@
 
 @implementation iCloudOrLocalHybrid
 
+// TODO:
+// IDea to PUSH Safes... perhaps change the safe collection in here directly and the notify SafeView so it can update...
+// Migration ... Need to support UI Progress Indicator
+
 + (instancetype)sharedInstance {
     static iCloudOrLocalHybrid *sharedInstance = nil;
     static dispatch_once_t onceToken;
@@ -61,24 +65,44 @@
       parentFolder:(NSObject *)parentFolder
     viewController:(UIViewController *)viewController
         completion:(void (^)(SafeMetaData *metadata, NSError *error))completion {
-    [self.provider create:nickName data:data parentFolder:parentFolder viewController:viewController completion:completion];
+    return [self.provider create:nickName data:data parentFolder:parentFolder viewController:viewController completion:completion];
 }
 
 - (void)      read:(SafeMetaData *)safeMetaData
     viewController:(UIViewController *)viewController
         completion:(void (^)(NSData *data, NSError *error))completion {
-    [self.provider read:safeMetaData viewController:viewController completion:completion];
+    return [self.provider read:safeMetaData viewController:viewController completion:completion];
 }
 
 - (void)update:(SafeMetaData *)safeMetaData
           data:(NSData *)data
     completion:(void (^)(NSError *error))completion {
-    [self.provider update:safeMetaData data:data completion:completion];
+    return [self.provider update:safeMetaData data:data completion:completion];
 }
 
 - (void)delete:(SafeMetaData*)safeMetaData completion:(void (^)(NSError *error))completion {
-    [self.provider delete:safeMetaData completion:completion];
+    return [self.provider delete:safeMetaData completion:completion];
 }
+
+- (SafeMetaData *)getSafeMetaData:(NSString *)nickName providerData:(NSObject *)providerData {
+    return [self.provider getSafeMetaData:nickName providerData:providerData];
+}
+
+
+- (void)list:(NSObject *)parentFolder viewController:(UIViewController *)viewController completion:(void (^)(NSArray<StorageBrowserItem *> *, NSError *))completion {
+    return [self.provider list:parentFolder viewController:viewController completion:completion];
+}
+
+
+- (void)loadIcon:(NSObject *)providerData viewController:(UIViewController *)viewController completion:(void (^)(UIImage *))completionHandler {
+    return [self.provider loadIcon:providerData viewController:viewController completion:completionHandler];
+}
+
+
+- (void)readWithProviderData:(NSObject *)providerData viewController:(UIViewController *)viewController completion:(void (^)(NSData *, NSError *))completionHandler {
+    return [self.provider readWithProviderData:providerData viewController:viewController completion:completionHandler];
+}
+
 
 - (void)migrateLocalToiCloud {
 //    NSLog(@"local => iCloud");
