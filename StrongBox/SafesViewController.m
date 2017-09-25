@@ -137,8 +137,6 @@ BOOL _iCloudAvailable; // TODO:
     [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
         _iCloudAvailable = available;
         
-        // TODO:
-        
         if (!_iCloudAvailable) {
             // If iCloud isn't available, set promoted to no (so we can ask them next time it becomes available)
             [Settings sharedInstance].iCloudPrompted = NO;
@@ -178,14 +176,14 @@ BOOL _iCloudAvailable; // TODO:
 - (void)continueICloudAvailableProcedure {
     // If iCloud newly switched on, move local docs to iCloud
     if ([Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudWasOn && [self getICloudOrLocalHybridSafes].count) {
-        [Alerts info:self title:@"iCloud was Switched On" message:@"Your previously local only safes will now be migrated to iCloud safes."];
+        [Alerts info:self title:@"iCloud Available" message:@"Your previously local only safes will now be migrated to iCloud safes."];
         [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] migrateLocalToiCloud];
     }
 
     // If iCloud newly switched off, move iCloud docs to local
     if (![Settings sharedInstance].iCloudOn && [Settings sharedInstance].iCloudWasOn && [self getICloudOrLocalHybridSafes].count) {
         [Alerts threeOptions:self
-                       title:@"iCloud was Switched Off"
+                       title:@"iCloud Unavailable"
                      message:@"What would you like to do with the safes currently on this device?"
            defaultButtonText:@"Remove them, Keep on iCloud Only"
             secondButtonText:@"Make Local Copies"
@@ -461,13 +459,13 @@ BOOL _iCloudAvailable; // TODO:
     
     NSString *message;
     
-    if(safe.storageProvider == kiCloud) {
+    if(safe.storageProvider == kiCloud && [Settings sharedInstance].iCloudOn) {
         message = @"This will remove the document from all your iCloud enabled devices.\n\n"
                     @"Are you sure you want to remove this safe from Strongbox and iCloud?";
     }
     else {
         message = [NSString stringWithFormat:@"Are you sure you want to remove this safe from Strongbox?%@",
-                         safe.storageProvider == kLocalDevice ? @"" : @" (NB: The underlying safe data file will not be deleted)"];
+                         (safe.storageProvider == kiCloud || safe.storageProvider == kLocalDevice)  ? @"" : @" (NB: The underlying safe data file will not be deleted)"];
     }
     
     [Alerts yesNo:self
@@ -548,6 +546,9 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
     // Are we offline for cloud based providers?
     
     if (provider.cloudBased &&
+        
+        !(provider.storageId == kiCloud && [Settings sharedInstance].iCloudOn) &&
+        
         [[Settings sharedInstance] isOffline] &&
         safe.offlineCacheEnabled &&
         safe.offlineCacheAvailable) {

@@ -45,8 +45,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    //self.navigationItem.prompt = @"Please select the correct version of the safe to use";
 
     self.versions = [NSMutableArray array];
 }
@@ -69,11 +67,31 @@
     // Configure the cell...
     //UIImageView * imageView = (UIImageView *) [cell viewWithTag:1];
     
-    NSFileVersion * entry = [self.versions objectAtIndex:indexPath.row];
+    NSFileVersion * fileVersion = [self.versions objectAtIndex:indexPath.row];
     
-    cell.textLabel.text = [NSString stringWithFormat:@"Modified on %@", entry.localizedNameOfSavingComputer];
-    cell.detailTextLabel.text = entry.modificationDate.description;
+    cell.textLabel.text = [NSString stringWithFormat:@"Modified on %@", fileVersion.localizedNameOfSavingComputer];
+    cell.detailTextLabel.text = fileVersion.modificationDate.description;
     
     return cell;
 }
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSFileVersion *version = [self.versions objectAtIndex:indexPath.row];
+    
+    NSURL* fileURL = [NSURL URLWithString:self.url];
+    
+    if (![version isEqual:[NSFileVersion currentVersionOfItemAtURL:fileURL]]) {
+        [version replaceItemAtURL:fileURL options:0 error:nil];
+    }
+    
+    [NSFileVersion removeOtherVersionsOfItemAtURL:fileURL error:nil];
+    NSArray* conflictVersions = [NSFileVersion unresolvedConflictVersionsOfItemAtURL:fileURL];
+    
+    for (NSFileVersion* fileVersion in conflictVersions) {
+        fileVersion.resolved = YES;
+    }
+    
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
 @end
