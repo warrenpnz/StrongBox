@@ -16,7 +16,7 @@
 #import "PasswordDatabase.h"
 #import "Alerts.h"
 #import "StorageBrowserTableViewController.h"
-#import "AppleICloudAndLocalDocumentHybridProvider.h"
+#import "AppleICloudProvider.h"
 
 @interface SelectStorageProviderController ()
 
@@ -47,7 +47,7 @@
                            [DropboxV2StorageProvider sharedInstance]];
     }
     else {
-        self.providers = @[[AppleICloudAndLocalDocumentHybridProvider sharedInstance],
+        self.providers = @[[AppleICloudProvider sharedInstance],
                            [GoogleDriveStorageProvider sharedInstance],
                            [DropboxV2StorageProvider sharedInstance],
                            [LocalDeviceStorageProvider sharedInstance]

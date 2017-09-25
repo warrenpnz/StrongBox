@@ -10,16 +10,13 @@
 #import "SafeStorageProvider.h"
 #import "AppleICloudOrLocalSafeFile.h"
     
-@interface AppleICloudAndLocalDocumentHybridProvider : NSObject <SafeStorageProvider>
+@interface AppleICloudProvider : NSObject <SafeStorageProvider>
 
 + (instancetype)sharedInstance;
 
 - (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion;
 
 - (void)monitorICloudFiles; // TODO: Is there a Point to this?
-
-- (void)migrateLocalToiCloud;
-- (void)migrateiCloudToLocal;
 
 @property (strong, nonatomic, readonly) NSString *displayName;
 @property (strong, nonatomic, readonly) NSString *icon;

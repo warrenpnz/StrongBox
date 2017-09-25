@@ -6,7 +6,7 @@
 //  Copyright © 2017 Mark McGuill. All rights reserved.
 //
 
-#import "AppleICloudAndLocalDocumentHybridProvider.h"
+#import "AppleICloudProvider.h"
 #import "PasswordSafeUIDocument.h"
 #import "Strongbox.h"
 #import "Utils.h"
@@ -22,14 +22,14 @@ NSMutableArray<AppleICloudOrLocalSafeFile*> * _iCloudFiles;
 BOOL _pleaseCopyiCloudToLocalWhenReady;
 BOOL _pleaseMoveLocalToiCloudWhenReady;
 
-@implementation AppleICloudAndLocalDocumentHybridProvider
+@implementation AppleICloudProvider
 
 + (instancetype)sharedInstance {
-    static AppleICloudAndLocalDocumentHybridProvider *sharedInstance = nil;
+    static AppleICloudProvider *sharedInstance = nil;
     static dispatch_once_t onceToken;
     
     dispatch_once(&onceToken, ^{
-        sharedInstance = [[AppleICloudAndLocalDocumentHybridProvider alloc] init];
+        sharedInstance = [[AppleICloudProvider alloc] init];
     });
     
     return sharedInstance;
@@ -53,26 +53,11 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
 }
 
 - (NSString *)displayName {
-    return Settings.sharedInstance.iCloudOn ? @"iCloud" : @"Local Device";
+    return @"iCloud";
 }
 
 - (NSString *)icon {
-    return Settings.sharedInstance.iCloudOn ? @"icloud-32" : @"phone";
-}
-
-- (NSURL *)localRoot { 
-    NSArray * paths = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
-//
-//    NSArray * localDocuments = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:paths.lastObject includingPropertiesForKeys:nil options:0 error:nil];
-//
-//    for (int i=0; i < localDocuments.count; i++) {
-//        NSURL * fileURL = [localDocuments objectAtIndex:i];
-//        NSLog(@"%@", fileURL);
-//    }
-    
-    //NSLog(@"LOCAL => %@" , paths.lastObject);
-    
-    return paths.lastObject;
+    return @"icloud-32";
 }
 
 - (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion {
@@ -334,109 +319,41 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     if ([Settings sharedInstance].iCloudOn) {
         self.filesUpdatesListener(_iCloudFiles);
     }
-    
-    if (_pleaseMoveLocalToiCloudWhenReady) {
-        _pleaseMoveLocalToiCloudWhenReady = NO;
-        [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] localToiCloudImpl];
-    }
-    else if (_pleaseCopyiCloudToLocalWhenReady) {
-        _pleaseCopyiCloudToLocalWhenReady = NO;
-        [self iCloudToLocalImpl];
-    }
+//
+//    if (_pleaseMoveLocalToiCloudWhenReady) {
+//        _pleaseMoveLocalToiCloudWhenReady = NO;
+//        [self localToiCloudImpl];
+//    }
+//    else if (_pleaseCopyiCloudToLocalWhenReady) {
+//        _pleaseCopyiCloudToLocalWhenReady = NO;
+//        [self iCloudToLocalImpl];
+//    }
     
     [_query enableUpdates];
 }
 
-- (void)migrateLocalToiCloud {
-    NSLog(@"local => iCloud");
-    
-    if (_iCloudURLsReady) {
-        [self localToiCloudImpl];
-    }
-    else {
-        _pleaseMoveLocalToiCloudWhenReady = YES;
-    }
-}
-
-- (void)migrateiCloudToLocal {
-    if (_iCloudURLsReady) {
-        [self iCloudToLocalImpl];
-    } else {
-        _pleaseCopyiCloudToLocalWhenReady = YES;
-    }
-}
-
-- (void)localToiCloudImpl {
-    NSLog(@"local => iCloud impl");
-    NSArray * localDocuments = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:self.localRoot includingPropertiesForKeys:nil options:0 error:nil];
-    
-    for (int i=0; i < localDocuments.count; i++) {
-        NSURL * fileURL = [localDocuments objectAtIndex:i];
-        if ([[fileURL pathExtension] isEqualToString:FILE_EXTENSION]) {
-            NSString * displayName = [[fileURL lastPathComponent] stringByDeletingPathExtension];
-            
-            if([self docNameExistsIniCloudURLs:[self docNameFromDisplayName:displayName]]) {
-                displayName = [displayName stringByAppendingString:@"-Migrated"];
-            }
-            
-            NSURL *destURL = [self getDocURL:[self getDocFilename:displayName uniqueInObjects:NO]];
-            
-            // Perform actual move in background thread
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-                NSError * error;
-                BOOL success = [[NSFileManager defaultManager] setUbiquitous:[Settings sharedInstance].iCloudOn itemAtURL:fileURL destinationURL:destURL error:&error];
-                if (success) {
-                    NSLog(@"Moved %@ to %@", fileURL, destURL);
-                } else {
-                    NSLog(@"Failed to move %@ to %@: %@", fileURL, destURL, error.localizedDescription);
-                }
-            });
-        }
-    }
-}
-
-- (void)iCloudToLocalImpl {
-    NSLog(@"iCloud => local impl");
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        NSMutableArray<AppleICloudOrLocalSafeFile*>* updatedFiles = [NSMutableArray array];
-        
-        NSArray<AppleICloudOrLocalSafeFile*>* safesCollectionCopy = [_iCloudFiles copy];
-        for (AppleICloudOrLocalSafeFile *file in safesCollectionCopy) {
-            NSURL *destURL = [self getDocURL:[self getDocFilename:file.displayName uniqueInObjects:YES]];
-            
-            NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-            [fileCoordinator coordinateReadingItemAtURL:file.fileUrl options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
-                NSFileManager * fileManager = [[NSFileManager alloc] init];
-                NSError * error;
-                BOOL success = [fileManager copyItemAtURL:file.fileUrl toURL:destURL error:&error];
-                
-                //BOOL success = [fileManager setUbiquitous:NO itemAtURL:file.fileUrl destinationURL:destURL error:&error];
-
-                if (success) {
-                    AppleICloudOrLocalSafeFile *localSafeFile =
-                    [[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:[self displayNameFromUrl:destURL] fileUrl:destURL hasUnresolvedConflicts:NO];
-                    
-                    [updatedFiles addObject:localSafeFile];
-                    
-                    NSLog(@"Copied %@ to %@ (%d)", file.fileUrl, destURL, [Settings sharedInstance].iCloudOn);
-                } else {
-                    NSLog(@"Failed to copy %@ to %@: %@", file.fileUrl, destURL, error.localizedDescription);
-                }
-            }];
-        }
-        
-        self.filesUpdatesListener(updatedFiles);
-    });
-}
+//- (void)migrateLocalToiCloud {
+//    NSLog(@"local => iCloud");
+//
+//    if (_iCloudURLsReady) {
+//        [self localToiCloudImpl];
+//    }
+//    else {
+//        _pleaseMoveLocalToiCloudWhenReady = YES;
+//    }
+//}
+//
+//- (void)migrateiCloudToLocal {
+//    if (_iCloudURLsReady) {
+//        [self iCloudToLocalImpl];
+//    } else {
+//        _pleaseCopyiCloudToLocalWhenReady = YES;
+//    }
+//}
 
 - (NSURL *)getDocURL:(NSString *)filename {
-    if ([Settings sharedInstance].iCloudOn) {
-        NSURL * docsDir = [_iCloudRoot URLByAppendingPathComponent:@"Documents" isDirectory:YES]; // TODO: Documents?
-        return [docsDir URLByAppendingPathComponent:filename];
-    } else {
-        return [self.localRoot URLByAppendingPathComponent:filename];
-    }
+    NSURL * docsDir = [_iCloudRoot URLByAppendingPathComponent:@"Documents" isDirectory:YES];
+    return [docsDir URLByAppendingPathComponent:filename];
 }
 
 - (NSString*)docNameFromDisplayName:(NSString*)displayName {

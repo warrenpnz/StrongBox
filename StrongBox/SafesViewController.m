@@ -26,10 +26,11 @@
 #import <SVProgressHUD/SVProgressHUD.h>
 #import "SelectStorageProviderController.h"
 #import <PopupDialog/PopupDialog-Swift.h>
-#import "AppleICloudAndLocalDocumentHybridProvider.h"
+#import "AppleICloudProvider.h"
 #import "Strongbox.h"
 #import "SafeItemTableCell.h"
 #import "VersionConflictController.h"
+#import "iCloudOrLocalHybrid.h"
 
 #define kTouchId911Limit 5
 
@@ -72,7 +73,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    [AppleICloudAndLocalDocumentHybridProvider sharedInstance].filesUpdatesListener = ^(NSArray<AppleICloudOrLocalSafeFile *> *filesMetadata) {
+    [AppleICloudProvider sharedInstance].filesUpdatesListener = ^(NSArray<AppleICloudOrLocalSafeFile *> *filesMetadata) {
         [self iCloudFilesDidChange:filesMetadata];
     };
     
@@ -114,7 +115,7 @@
 }
 
 - (void)checkICloudAvailability {
-    [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
+    [[AppleICloudProvider sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
         Settings.sharedInstance.iCloudAvailable = available;
         
         if (!Settings.sharedInstance.iCloudAvailable) {
@@ -159,7 +160,7 @@
     // If iCloud newly switched on, move local docs to iCloud
     if ([Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudWasOn && [self getICloudOrLocalHybridSafes].count) {
         [Alerts info:self title:@"iCloud Available" message:@"Your previously local only safes will now be migrated to iCloud safes."];
-        [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] migrateLocalToiCloud];
+        [[iCloudOrLocalHybrid sharedInstance] migrateLocalToiCloud];
     }
 
     // If iCloud newly switched off, move iCloud docs to local
@@ -181,7 +182,7 @@
                         }
                         else if(response == 1) {      // @"Keep a Local Copy"
                             [self removeAllICloudSafes];
-                            [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] migrateiCloudToLocal];
+                            [[iCloudOrLocalHybrid sharedInstance] migrateiCloudToLocal];
                         }
                         else if(response == 0) {
                             [self removeAllICloudSafes];
@@ -190,7 +191,7 @@
     }
 
     [Settings sharedInstance].iCloudWasOn = [Settings sharedInstance].iCloudOn;
-    [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] monitorICloudFiles];
+    [[AppleICloudProvider sharedInstance] monitorICloudFiles];
 }
 
 - (void)iCloudFilesDidChange:(NSArray<AppleICloudOrLocalSafeFile*>*)files {
@@ -390,7 +391,7 @@
         return [DropboxV2StorageProvider sharedInstance];
     }
     else if (providerId == kiCloud) {
-        return [AppleICloudAndLocalDocumentHybridProvider sharedInstance];
+        return [AppleICloudProvider sharedInstance];
     }
     else if (providerId == kLocalDevice)
     {
@@ -473,7 +474,7 @@
                 }];
     }
     else if (safe.storageProvider == kiCloud) {
-        [[AppleICloudAndLocalDocumentHybridProvider sharedInstance] delete:safe completion:^(NSError *error) {
+        [[AppleICloudProvider sharedInstance] delete:safe completion:^(NSError *error) {
             if(error) {
                 NSLog(@"%@", error);
                 [Alerts error:self title:@"Error Deleting iCloud Safe" error:error];

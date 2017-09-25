@@ -1,17 +1,17 @@
 //
-//  SafeStorageProvider.h
-//  StrongBox
+//  Hybrid.h
+//  Strongbox
 //
-//  Created by Mark on 19/11/2014.
-//  Copyright (c) 2014 Mark McGuill. All rights reserved.
+//  Created by Mark on 25/09/2017.
+//  Copyright © 2017 Mark McGuill. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
-#import "SafeMetaData.h"
-#import "StorageBrowserItem.h"
+#import "SafeStorageProvider.h"
 
-@protocol SafeStorageProvider <NSObject>
+@interface iCloudOrLocalHybrid : NSObject <SafeStorageProvider>
+
++ (instancetype)sharedInstance;
 
 @property (strong, nonatomic, readonly) NSString *displayName;
 @property (strong, nonatomic, readonly) NSString *icon;
@@ -36,17 +36,7 @@
 
 - (void)delete:(SafeMetaData*)safeMetaData completion:(void (^)(NSError *error))completion;
 
-- (void)      list:(NSObject *)parentFolder
-    viewController:(UIViewController *)viewController
-        completion:(void (^)(NSArray<StorageBrowserItem *> *items, NSError *error))completion;
-
-- (void)readWithProviderData:(NSObject *)providerData
-              viewController:(UIViewController *)viewController
-                  completion:(void (^)(NSData *data, NSError *error))completionHandler;
-
-- (void)loadIcon:(NSObject *)providerData viewController:(UIViewController *)viewController
-      completion:(void (^)(UIImage *image))completionHandler;
-
-- (SafeMetaData *)getSafeMetaData:(NSString *)nickName providerData:(NSObject *)providerData;
+- (void)migrateLocalToiCloud;
+- (void)migrateiCloudToLocal;
 
 @end
