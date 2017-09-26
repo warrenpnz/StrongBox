@@ -17,6 +17,7 @@
 #import "Alerts.h"
 #import "StorageBrowserTableViewController.h"
 #import "AppleICloudProvider.h"
+#import "Settings.h"
 
 @interface SelectStorageProviderController ()
 
@@ -47,11 +48,15 @@
                            [DropboxV2StorageProvider sharedInstance]];
     }
     else {
-        self.providers = @[[AppleICloudProvider sharedInstance],
-                           [GoogleDriveStorageProvider sharedInstance],
-                           [DropboxV2StorageProvider sharedInstance],
-                           [LocalDeviceStorageProvider sharedInstance]
-                           ];
+        if ([Settings sharedInstance].iCloudOn) {
+            self.providers = @[[AppleICloudProvider sharedInstance],
+                               [GoogleDriveStorageProvider sharedInstance],
+                               [DropboxV2StorageProvider sharedInstance]];
+        }else {
+            self.providers = @[[GoogleDriveStorageProvider sharedInstance],
+                               [DropboxV2StorageProvider sharedInstance],
+                               [LocalDeviceStorageProvider sharedInstance]];
+        }
     }
 }
 

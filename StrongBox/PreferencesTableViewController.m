@@ -176,7 +176,7 @@
     
     int i=0;
     NSString *safesMessage = @"Safes Collection<br />----------------<br />";
-    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
+    for(SafeMetaData *safe in [SafesCollection sharedInstance].sortedSafes) {
         NSString *thisSafe = [NSString stringWithFormat:@"%d. [%@]<br />   [%@]-[%@]-[%d%d%d%d%d]<br />", i++,
                               safe.nickName,
                               safe.fileName,

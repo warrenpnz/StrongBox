@@ -33,7 +33,7 @@
 		4D40EEF11ED878DB006532F8 /* StorageBrowserItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D40EEF01ED878DB006532F8 /* StorageBrowserItem.m */; };
 		4D4C49041EDEC0B900EB857D /* RecordView.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D4C49031EDEC0B900EB857D /* RecordView.m */; };
 		4D55F0D81EE2BFF400C43B26 /* TextFieldAutoSuggest.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D55F0D71EE2BFF400C43B26 /* TextFieldAutoSuggest.m */; };
-		4D632E1E1F79631100C31279 /* iCloudOrLocalHybrid.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D632E1D1F79631100C31279 /* iCloudOrLocalHybrid.m */; };
+		4D632E1E1F79631100C31279 /* iCloudAndLocalSafesCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D632E1D1F79631100C31279 /* iCloudAndLocalSafesCoordinator.m */; };
 		4D68DBB31F430ECB00A8A148 /* PasswordDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D68DBB21F430ECB00A8A148 /* PasswordDatabase.m */; };
 		4D6C51981F6407580035640E /* SafeDetailsView.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D6C51971F6407580035640E /* SafeDetailsView.m */; };
 		4D915D741EDC068D002615F6 /* PasswordHistoryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 4D915D731EDC068D002615F6 /* PasswordHistoryViewController.m */; };
@@ -120,8 +120,8 @@
 		4D4C49031EDEC0B900EB857D /* RecordView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RecordView.m; sourceTree = "<group>"; };
 		4D55F0D61EE2BFF400C43B26 /* TextFieldAutoSuggest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TextFieldAutoSuggest.h; sourceTree = "<group>"; };
 		4D55F0D71EE2BFF400C43B26 /* TextFieldAutoSuggest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TextFieldAutoSuggest.m; sourceTree = "<group>"; };
-		4D632E1C1F79631100C31279 /* iCloudOrLocalHybrid.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iCloudOrLocalHybrid.h; sourceTree = "<group>"; };
-		4D632E1D1F79631100C31279 /* iCloudOrLocalHybrid.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = iCloudOrLocalHybrid.m; sourceTree = "<group>"; };
+		4D632E1C1F79631100C31279 /* iCloudAndLocalSafesCoordinator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iCloudAndLocalSafesCoordinator.h; sourceTree = "<group>"; };
+		4D632E1D1F79631100C31279 /* iCloudAndLocalSafesCoordinator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = iCloudAndLocalSafesCoordinator.m; sourceTree = "<group>"; };
 		4D68DBB11F430ECB00A8A148 /* PasswordDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PasswordDatabase.h; path = PwSafeModel/PasswordDatabase.h; sourceTree = SOURCE_ROOT; };
 		4D68DBB21F430ECB00A8A148 /* PasswordDatabase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PasswordDatabase.m; path = PwSafeModel/PasswordDatabase.m; sourceTree = SOURCE_ROOT; };
 		4D6C51961F6407580035640E /* SafeDetailsView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SafeDetailsView.h; sourceTree = "<group>"; };
@@ -254,8 +254,8 @@
 				4D40EEF01ED878DB006532F8 /* StorageBrowserItem.m */,
 				4DCF5FBD1F7299DD00011756 /* AppleICloudProvider.h */,
 				4DCF5FBE1F7299DD00011756 /* AppleICloudProvider.m */,
-				4D632E1C1F79631100C31279 /* iCloudOrLocalHybrid.h */,
-				4D632E1D1F79631100C31279 /* iCloudOrLocalHybrid.m */,
+				4D632E1C1F79631100C31279 /* iCloudAndLocalSafesCoordinator.h */,
+				4D632E1D1F79631100C31279 /* iCloudAndLocalSafesCoordinator.m */,
 			);
 			name = StorageProviders;
 			sourceTree = "<group>";
@@ -586,7 +586,7 @@
 				4D915D771EDC06A0002615F6 /* PreviousPasswordsTableViewController.m in Sources */,
 				4D92C7F21F388D0900341A58 /* Group.m in Sources */,
 				4D1A5BFF1F7924C30036684C /* SafeItemTableCell.m in Sources */,
-				4D632E1E1F79631100C31279 /* iCloudOrLocalHybrid.m in Sources */,
+				4D632E1E1F79631100C31279 /* iCloudAndLocalSafesCoordinator.m in Sources */,
 				4D0BA7DB1F23CA2A009243C9 /* PreferencesTableViewController.m in Sources */,
 				4D1A5C021F7927D60036684C /* VersionConflictController.m in Sources */,
 				4D1757C41C8361D300E6356F /* LocalDeviceStorageProvider.m in Sources */,

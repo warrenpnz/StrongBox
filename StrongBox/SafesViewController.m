@@ -30,7 +30,7 @@
 #import "Strongbox.h"
 #import "SafeItemTableCell.h"
 #import "VersionConflictController.h"
-#import "iCloudOrLocalHybrid.h"
+#import "iCloudAndLocalSafesCoordinator.h"
 
 #define kTouchId911Limit 5
 
@@ -39,6 +39,7 @@
 @property (nonatomic, strong) SKProductsRequest *productsRequest;
 @property (nonatomic, strong) NSArray<SKProduct *> *validProducts;
 @property (nonatomic) BOOL touchId911;
+@property (nonatomic, copy) NSArray<SafeMetaData*> *collection;
 
 @end
 
@@ -61,6 +62,7 @@
 }
 
 - (void)refreshView {
+    self.collection = SafesCollection.sharedInstance.sortedSafes;
     [self.tableView reloadData];
     
     self.navigationController.navigationBar.hidden = NO;
@@ -73,10 +75,21 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    [AppleICloudProvider sharedInstance].filesUpdatesListener = ^(NSArray<AppleICloudOrLocalSafeFile *> *filesMetadata) {
+    self.collection = [NSArray array];
+    
+    [iCloudAndLocalSafesCoordinator sharedInstance].filesUpdatesListener = ^(NSArray<AppleICloudOrLocalSafeFile *> *filesMetadata) {
+        NSLog(@"Safes Collection Updated! %lu", (unsigned long)filesMetadata.count);
+        
         [self iCloudFilesDidChange:filesMetadata];
     };
-    
+
+    [iCloudAndLocalSafesCoordinator sharedInstance].updateSafesCollection = ^{
+        NSLog(@"Safes Collection Updated!");
+        dispatch_async(dispatch_get_main_queue(), ^(void) {
+            [self refreshView];
+        });
+    };
+
     [self customizeUi];
     
     if(![[Settings sharedInstance] isPro]) {
@@ -94,16 +107,16 @@
     }
 }
 
-- (NSArray<SafeMetaData*>*)getICloudOrLocalHybridSafes {
-    return [SafesCollection.sharedInstance.safes filteredArrayUsingPredicate:
-     [NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
-        SafeMetaData* item = (SafeMetaData*)evaluatedObject;
-        return item.storageProvider == kiCloud;
-    }]];
+- (NSArray<SafeMetaData*>*)getLocalDeviceSafes {
+    return [SafesCollection.sharedInstance getSafesOfProvider:kLocalDevice];
+}
+
+- (NSArray<SafeMetaData*>*)getICloudSafes {
+    return [SafesCollection.sharedInstance getSafesOfProvider:kiCloud];
 }
 
 - (void)removeAllICloudSafes {
-    NSArray<SafeMetaData*> *icloudSafesToRemove = [self getICloudOrLocalHybridSafes];
+    NSArray<SafeMetaData*> *icloudSafesToRemove = [self getICloudSafes];
     
     for (SafeMetaData *item in icloudSafesToRemove) {
         [SafesCollection.sharedInstance removeSafe:item];
@@ -115,14 +128,14 @@
 }
 
 - (void)checkICloudAvailability {
-    [[AppleICloudProvider sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
+    [[iCloudAndLocalSafesCoordinator sharedInstance] initializeiCloudAccessWithCompletion:^(BOOL available) {
         Settings.sharedInstance.iCloudAvailable = available;
         
         if (!Settings.sharedInstance.iCloudAvailable) {
             // If iCloud isn't available, set promoted to no (so we can ask them next time it becomes available)
             [Settings sharedInstance].iCloudPrompted = NO;
             
-            if ([[Settings sharedInstance] iCloudWasOn] &&  [self getICloudOrLocalHybridSafes].count) {
+            if ([[Settings sharedInstance] iCloudWasOn] &&  [self getICloudSafes].count) {
                 [Alerts warn:self
                        title:@"iCloud no longer available"
                      message:@"Some safes were removed from this device because iCloud has become unavailable, but they remain stored in iCloud."];
@@ -158,13 +171,13 @@
 
 - (void)continueICloudAvailableProcedure {
     // If iCloud newly switched on, move local docs to iCloud
-    if ([Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudWasOn && [self getICloudOrLocalHybridSafes].count) {
-        [Alerts info:self title:@"iCloud Available" message:@"Your previously local only safes will now be migrated to iCloud safes."];
-        [[iCloudOrLocalHybrid sharedInstance] migrateLocalToiCloud];
+    if ([Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudWasOn && [self getLocalDeviceSafes].count) {
+        [Alerts info:self title:@"iCloud Available" message:@"Your previously local only safes are now being migrated to iCloud safes."];
+        [[iCloudAndLocalSafesCoordinator sharedInstance] migrateLocalToiCloud];
     }
 
     // If iCloud newly switched off, move iCloud docs to local
-    if (![Settings sharedInstance].iCloudOn && [Settings sharedInstance].iCloudWasOn && [self getICloudOrLocalHybridSafes].count) {
+    if (![Settings sharedInstance].iCloudOn && [Settings sharedInstance].iCloudWasOn && [self getICloudSafes].count) {
         [Alerts threeOptions:self
                        title:@"iCloud Unavailable"
                      message:@"What would you like to do with the safes currently on this device?"
@@ -181,8 +194,7 @@
                             });
                         }
                         else if(response == 1) {      // @"Keep a Local Copy"
-                            [self removeAllICloudSafes];
-                            [[iCloudOrLocalHybrid sharedInstance] migrateiCloudToLocal];
+                            [[iCloudAndLocalSafesCoordinator sharedInstance] migrateiCloudToLocal];
                         }
                         else if(response == 0) {
                             [self removeAllICloudSafes];
@@ -191,7 +203,7 @@
     }
 
     [Settings sharedInstance].iCloudWasOn = [Settings sharedInstance].iCloudOn;
-    [[AppleICloudProvider sharedInstance] monitorICloudFiles];
+    [[iCloudAndLocalSafesCoordinator sharedInstance] startCoordinating];
 }
 
 - (void)iCloudFilesDidChange:(NSArray<AppleICloudOrLocalSafeFile*>*)files {
@@ -280,10 +292,8 @@
 -(NSMutableDictionary<NSString*, SafeMetaData*>*)getAllMyICloudSafeFileNames {
     NSMutableDictionary<NSString*, SafeMetaData*>* ret = [NSMutableDictionary dictionary];
 
-    for(SafeMetaData *safe in [SafesCollection sharedInstance].safes) {
-        if(safe.storageProvider == kiCloud) {
-            [ret setValue:safe forKey:safe.fileName];
-        }
+    for(SafeMetaData *safe in [[SafesCollection sharedInstance] getSafesOfProvider:kiCloud]) {
+        [ret setValue:safe forKey:safe.fileName];
     }
 
     return ret;
@@ -363,13 +373,13 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return [SafesCollection sharedInstance].safes.count;
+    return self.collection.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     SafeItemTableCell *cell = [tableView dequeueReusableCellWithIdentifier:@"reuseIdentifier" forIndexPath:indexPath];
     
-    SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
+    SafeMetaData *safe = [self.collection objectAtIndex:indexPath.row];
     
     cell.textLabel.text = safe.nickName;
     cell.detailTextLabel.text = safe.fileName;
@@ -410,7 +420,7 @@
         return;
     }
     
-    SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
+    SafeMetaData *safe = [self.collection objectAtIndex:indexPath.row];
     
     if(safe.hasUnresolvedConflicts) {
         [self performSegueWithIdentifier:@"segueToVersionConflictResolution" sender:safe.fileIdentifier];
@@ -438,7 +448,7 @@
 }
 
 - (void)removeSafe:(NSIndexPath * _Nonnull)indexPath {
-    SafeMetaData *safe = [[SafesCollection sharedInstance].safes objectAtIndex:indexPath.row];
+    SafeMetaData *safe = [self.collection objectAtIndex:indexPath.row];
     
     NSString *message;
     
@@ -898,7 +908,7 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
 }
 
 - (BOOL)isAddExistingSafeAllowed {
-    return [[Settings sharedInstance] isProOrFreeTrial] || [SafesCollection sharedInstance].safes.count < 1;
+    return [[Settings sharedInstance] isProOrFreeTrial] || self.collection.count < 1;
 }
 
 - (void)importFromUrlOrEmailAttachment:(NSURL *)importURL {

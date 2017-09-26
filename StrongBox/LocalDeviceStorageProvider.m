@@ -25,7 +25,7 @@
 - (instancetype)init {
     if (self = [super init]) {
         _displayName = @"Local Device";
-        _icon = @"warning-32";
+        _icon = @"phone";
         _storageId = kLocalDevice;
         _cloudBased = NO;
         _providesIcons = NO;
@@ -135,6 +135,11 @@
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (NSURL*)getFileUrl:(SafeMetaData*)safeMetaData {
+    NSString *path = [self getFilePath:safeMetaData offlineCache:NO];
+    return [NSURL fileURLWithPath:path];
+}
 
 - (NSString *)getFilePath:(SafeMetaData *)safeMetaData offlineCache:(BOOL)offlineCache {
     // MMcG: BUGFIX: Bug in older versions saved full path instead of relative, just chop it out and re-append

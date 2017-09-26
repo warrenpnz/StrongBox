@@ -13,7 +13,7 @@
 
 + (instancetype _Nullable)sharedInstance;
 
-@property (nonatomic, nonnull, readonly) NSArray<SafeMetaData*> *safes;
+@property (nonatomic, nonnull, readonly) NSArray<SafeMetaData*> *sortedSafes;
 
 - (void)add:(SafeMetaData *_Nonnull)safe;
 - (void)removeSafe:(SafeMetaData *_Nonnull)safe;
@@ -24,5 +24,7 @@
 - (BOOL)safeWithTouchIdIsAvailable;
 
 - (void)save;
+
+- (NSArray<SafeMetaData*>* _Nonnull)getSafesOfProvider:(StorageProvider)storageProvider;
 
 @end

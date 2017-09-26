@@ -12,7 +12,9 @@
 
 @interface SafesCollection ()
 
-@property (nonatomic, nonnull) NSMutableArray<SafeMetaData*> *mutableSafes;
+@property (atomic, nonnull) NSLock *lock;
+@property (nonatomic, nonnull) NSArray<SafeMetaData*> *theCollection;
+@property (nonatomic, nonnull) NSArray<SafeMetaData*> *snapshot;
 
 @end
 
@@ -30,16 +32,10 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSArray *existingSafes = [userDefaults arrayForKey:@"safes"];
+        self.lock = [[NSLock alloc] init];
+        self.theCollection = [[NSMutableArray alloc] init];
         
-        self.mutableSafes = [[NSMutableArray alloc] init];
-        
-        for (NSDictionary *safeDict in existingSafes) {
-            SafeMetaData *safe = [SafeMetaData fromDictionary:safeDict];
-            
-            [self.mutableSafes addObject:safe];
-        }
+        [self load];
         
         return self;
     }
@@ -48,29 +44,32 @@
     }
 }
 
-- (NSArray<SafeMetaData*>*)safes {
-    return [self.mutableSafes sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
-        NSString* str1 = ((SafeMetaData*)obj1).nickName;
-        NSString* str2 = ((SafeMetaData*)obj2).nickName;
-        
-        return [Utils finderStringCompare:str1 string2:str2];
-    }];
+- (NSArray<SafeMetaData *> *)snapshot {
+    [self.lock lock];
+    
+    NSArray<SafeMetaData*> *copy = [self.theCollection copy];
+    
+    [self.lock unlock];
+    
+    return copy;
+}
+
+- (void)setSnapshot:(NSArray<SafeMetaData *> *)snapshot {
+    [self.lock lock];
+    
+    self.theCollection = [NSArray arrayWithArray:snapshot ? [snapshot copy] : @[]];
+    
+    [self.lock unlock];
 }
 
 - (void)removeSafe:(SafeMetaData *)safe {
-    [self.mutableSafes removeObject:safe];
+    NSMutableArray *changed = [NSMutableArray arrayWithArray:self.snapshot];
+    
+    [changed removeObject:safe];
+
+    self.snapshot = changed;
 
     [self save];
-}
-
-- (NSSet *)getAllNickNamesLowerCase {
-    NSMutableSet *set = [[NSMutableSet alloc] initWithCapacity:self.mutableSafes.count];
-    
-    for (SafeMetaData *safe in self.mutableSafes) {
-        [set addObject:(safe.nickName).lowercaseString];
-    }
-    
-    return set;
 }
 
 - (void)add:(SafeMetaData *)safe {
@@ -79,17 +78,61 @@
         return;
     }
     
-    [self.mutableSafes addObject:safe];
+    NSMutableArray *changed = [NSMutableArray arrayWithArray:self.snapshot];
+    
+    [changed addObject:safe];
+    
+    self.snapshot = changed;
     
     [self save];
 }
 
+- (NSArray<SafeMetaData*>*)sortedSafes {
+    return [self.snapshot sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
+        NSString* str1 = ((SafeMetaData*)obj1).nickName;
+        NSString* str2 = ((SafeMetaData*)obj2).nickName;
+        
+        return [Utils finderStringCompare:str1 string2:str2];
+    }];
+}
+
+- (NSSet *)getAllNickNamesLowerCase {
+    NSMutableSet *set = [[NSMutableSet alloc] initWithCapacity:self.snapshot.count];
+    
+    for (SafeMetaData *safe in self.snapshot) {
+        [set addObject:(safe.nickName).lowercaseString];
+    }
+    
+    return set;
+}
+
+- (NSArray<SafeMetaData*>*)getSafesOfProvider:(StorageProvider)storageProvider {
+    return [self.snapshot filteredArrayUsingPredicate:
+            [NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
+        SafeMetaData* item = (SafeMetaData*)evaluatedObject;
+        return item.storageProvider == storageProvider;
+    }]];
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)save {
-    NSMutableArray *sfs = [NSMutableArray arrayWithCapacity:(self.mutableSafes).count ];
+- (void)load {
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSArray *existingSafes = [userDefaults arrayForKey:@"safes"];
     
-    for (SafeMetaData *s in self.mutableSafes) {
+    NSMutableArray<SafeMetaData*>* loading = [NSMutableArray array];
+    for (NSDictionary *safeDict in existingSafes) {
+        SafeMetaData *safe = [SafeMetaData fromDictionary:safeDict];
+        [loading addObject:safe];
+    }
+    
+    self.snapshot = loading;
+}
+
+- (void)save {
+    NSMutableArray *sfs = [NSMutableArray arrayWithCapacity:(self.snapshot).count ];
+    
+    for (SafeMetaData *s in self.snapshot) {
         [sfs addObject:s.toDictionary];
     }
     
@@ -120,7 +163,7 @@
 }
 
 - (BOOL)safeWithTouchIdIsAvailable {
-    NSArray<SafeMetaData*> *touchIdEnabledSafes = [self.mutableSafes filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
+    NSArray<SafeMetaData*> *touchIdEnabledSafes = [self.snapshot filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
         SafeMetaData *safe = (SafeMetaData*)evaluatedObject;
         return safe.isTouchIdEnabled && safe.isEnrolledForTouchId;
     }]];
