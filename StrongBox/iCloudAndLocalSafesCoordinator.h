@@ -17,15 +17,11 @@
 - (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion;
 - (void)startCoordinating;
 
-@property (nonatomic, copy) void (^filesUpdatesListener)(NSArray<AppleICloudOrLocalSafeFile*>* filesMetadata);
 @property (nonatomic, copy) void (^updateSafesCollection)(void);
-
 
 // Name ok?
 - (NSURL*)getDocURL:(NSString *)filename;
 - (NSString*)getDocFilename:(NSString *)prefix uniqueInObjects:(BOOL)uniqueInObjects;
-
-
 
 - (void)migrateLocalToiCloud;
 - (void)migrateiCloudToLocal;

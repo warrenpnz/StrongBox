@@ -77,14 +77,7 @@
 
     self.collection = [NSArray array];
     
-    [iCloudAndLocalSafesCoordinator sharedInstance].filesUpdatesListener = ^(NSArray<AppleICloudOrLocalSafeFile *> *filesMetadata) {
-        NSLog(@"Safes Collection Updated! %lu", (unsigned long)filesMetadata.count);
-        
-        [self iCloudFilesDidChange:filesMetadata];
-    };
-
     [iCloudAndLocalSafesCoordinator sharedInstance].updateSafesCollection = ^{
-        NSLog(@"Safes Collection Updated!");
         dispatch_async(dispatch_get_main_queue(), ^(void) {
             [self refreshView];
         });
@@ -204,109 +197,6 @@
 
     [Settings sharedInstance].iCloudWasOn = [Settings sharedInstance].iCloudOn;
     [[iCloudAndLocalSafesCoordinator sharedInstance] startCoordinating];
-}
-
-- (void)iCloudFilesDidChange:(NSArray<AppleICloudOrLocalSafeFile*>*)files {
-    BOOL removed = [self removeAnyDeletedICloudSafes:files];
-    BOOL updated = [self updateAnyICloudSafes:files];
-    BOOL added = [self addAnyNewICloudSafes:files];
-
-    if(added || removed || updated) {
-        dispatch_async(dispatch_get_main_queue(), ^(void) {
-            [self refreshView];
-        });
-    }
-}
-
-- (BOOL)updateAnyICloudSafes:(NSArray<AppleICloudOrLocalSafeFile*> *)files {
-    BOOL updated = NO;
-    
-    NSMutableDictionary<NSString*, AppleICloudOrLocalSafeFile*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
-    NSDictionary<NSString*, SafeMetaData*>* mine = [self getAllMyICloudSafeFileNames];
-    
-    for(NSString* fileName in mine.allKeys) {
-        AppleICloudOrLocalSafeFile *match = [theirs objectForKey:fileName];
-    
-        if(match) {
-            [mine objectForKey:fileName].fileIdentifier = [match.fileUrl absoluteString];
-            [mine objectForKey:fileName].hasUnresolvedConflicts = match.hasUnresolvedConflicts;
-            updated = YES;
-        }
-    }
-
-    if(updated) {
-        [[SafesCollection sharedInstance] save];
-    }
-    
-    return updated;
-}
-
--(BOOL)addAnyNewICloudSafes:(NSArray<AppleICloudOrLocalSafeFile*> *)files {
-    BOOL added = NO;
-
-    NSMutableDictionary<NSString*, AppleICloudOrLocalSafeFile*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
-    
-    NSDictionary<NSString*, SafeMetaData*>* mine = [self getAllMyICloudSafeFileNames];
-
-    for(NSString* fileName in mine.allKeys) {
-        [theirs removeObjectForKey:fileName];
-    }
-
-    for (AppleICloudOrLocalSafeFile* safeFile in theirs.allValues) {
-        NSString *fileName = [safeFile.fileUrl lastPathComponent];
-        NSString *displayName = safeFile.displayName;
-
-        SafeMetaData *newSafe = [[SafeMetaData alloc] initWithNickName:displayName storageProvider:kiCloud fileName:fileName fileIdentifier:[safeFile.fileUrl absoluteString]];
-        newSafe.hasUnresolvedConflicts = safeFile.hasUnresolvedConflicts;
-        
-        NSLog(@"Got New Safe... Adding [%@]", newSafe);
-
-        [[SafesCollection sharedInstance] add:newSafe];
-
-        added = YES;
-    }
-
-    return added;
-}
-
-- (BOOL)removeAnyDeletedICloudSafes:(NSArray<AppleICloudOrLocalSafeFile*>*)files {
-    BOOL removed = NO;
-    
-    NSMutableDictionary<NSString*, SafeMetaData*> *safeFileNamesToBeRemoved = [self getAllMyICloudSafeFileNames];
-    NSMutableDictionary<NSString*, AppleICloudOrLocalSafeFile*>* theirs = [self getAllICloudSafeFileNamesFromMetadataFilesList:files];
-    
-    for(NSString* fileName in theirs.allKeys) {
-        [safeFileNamesToBeRemoved removeObjectForKey:fileName];
-    }
-    
-    for(SafeMetaData* safe in safeFileNamesToBeRemoved.allValues) {
-        NSLog(@"Safe Removed: %@", safe);
-        
-        [SafesCollection.sharedInstance removeSafe:safe];
-        removed = YES;
-    }
-    
-    return removed;
-}
-
--(NSMutableDictionary<NSString*, SafeMetaData*>*)getAllMyICloudSafeFileNames {
-    NSMutableDictionary<NSString*, SafeMetaData*>* ret = [NSMutableDictionary dictionary];
-
-    for(SafeMetaData *safe in [[SafesCollection sharedInstance] getSafesOfProvider:kiCloud]) {
-        [ret setValue:safe forKey:safe.fileName];
-    }
-
-    return ret;
-}
-
--(NSMutableDictionary<NSString*, AppleICloudOrLocalSafeFile*>*)getAllICloudSafeFileNamesFromMetadataFilesList:(NSArray<AppleICloudOrLocalSafeFile*>*)files {
-    NSMutableDictionary<NSString*, AppleICloudOrLocalSafeFile*>* ret = [NSMutableDictionary dictionary];
-
-    for(AppleICloudOrLocalSafeFile *item in files) {
-        [ret setObject:item forKey:[item.fileUrl lastPathComponent]];
-    }
-
-    return ret;
 }
 
 - (void)customizeUi {
