@@ -15,8 +15,8 @@
 
 @property (nonatomic, nonnull, readonly) NSArray<SafeMetaData*> *sortedSafes;
 
-- (void)add:(SafeMetaData *_Nonnull)safe;
-- (void)removeSafe:(SafeMetaData *_Nonnull)safe;
+- (BOOL)add:(SafeMetaData *_Nonnull)safe;
+- (void)removeSafe:(NSString *_Nonnull)nickName;
 
 + (NSString * _Nonnull)sanitizeSafeNickName:(NSString *_Nonnull)string;
 

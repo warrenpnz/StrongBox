@@ -163,7 +163,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     SafeMetaData* metadata = [self tryToFindMetadataForiCloudFile:file.fileUrl]; // Try to preserve metadata
     
     if(metadata) {
-        [SafesCollection.sharedInstance removeSafe:metadata]; // Remove this safe so we can add local with same nick name
+        [SafesCollection.sharedInstance removeSafe:metadata.nickName]; // Remove this safe so we can add local with same nick name
     }
     
     NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
@@ -214,7 +214,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     NSArray<SafeMetaData*> *icloudSafesToRemove = [SafesCollection.sharedInstance getSafesOfProvider:kiCloud];
     
     for (SafeMetaData *item in icloudSafesToRemove) {
-        [SafesCollection.sharedInstance removeSafe:item];
+        [SafesCollection.sharedInstance removeSafe:item.nickName];
     }
 }
 
@@ -496,7 +496,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     for(SafeMetaData* safe in safeFileNamesToBeRemoved.allValues) {
         NSLog(@"Safe Removed: %@", safe);
         
-        [SafesCollection.sharedInstance removeSafe:safe];
+        [SafesCollection.sharedInstance removeSafe:safe.nickName];
         removed = YES;
     }
     

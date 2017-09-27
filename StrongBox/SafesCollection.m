@@ -12,9 +12,9 @@
 
 @interface SafesCollection ()
 
-@property (atomic, nonnull) NSLock *lock;
-@property (nonatomic, nonnull) NSArray<SafeMetaData*> *theCollection;
-@property (nonatomic, nonnull) NSArray<SafeMetaData*> *snapshot;
+@property (atomic, nonnull) NSRecursiveLock *lock;
+@property (nonatomic, nonnull) NSMutableDictionary<NSString*, SafeMetaData*> *theCollection;
+@property (nonatomic, nonnull, readonly) NSArray<SafeMetaData*> *snapshot;
 
 @end
 
@@ -32,8 +32,8 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        self.lock = [[NSLock alloc] init];
-        self.theCollection = [[NSMutableArray alloc] init];
+        self.lock = [[NSRecursiveLock alloc] init];
+        self.theCollection = [[NSMutableDictionary alloc] init];
         
         [self load];
         
@@ -46,45 +46,80 @@
 
 - (NSArray<SafeMetaData *> *)snapshot {
     [self.lock lock];
-    
-    NSArray<SafeMetaData*> *copy = [self.theCollection copy];
-    
+
+    NSArray<SafeMetaData*> *copy = [self.theCollection.allValues copy];
+
     [self.lock unlock];
-    
+
     return copy;
 }
 
-- (void)setSnapshot:(NSArray<SafeMetaData *> *)snapshot {
+- (void)removeSafe:(NSString*)safeName {
     [self.lock lock];
     
-    self.theCollection = [NSArray arrayWithArray:snapshot ? [snapshot copy] : @[]];
+    [self.theCollection removeObjectForKey:safeName];
+    [self save];
+    
+    [self.lock unlock];
+
+}
+
+- (BOOL)add:(SafeMetaData *)safe {
+    [self.lock lock];
+    
+    if ([self.theCollection objectForKey:safe.nickName] || ![self isValidNickName:safe.nickName]) {
+        NSLog(@"Cannot Save Safe, as existing Safe exists with this nick name, or the name is invalid!");
+        return NO;
+    }
+    
+    [self.theCollection setObject:safe forKey:safe.nickName];
+    [self save];
+    
+    [self.lock unlock];
+    
+    return YES;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)load {
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSArray *existingSafes = [userDefaults arrayForKey:@"safes"];
+    
+    [self.lock lock];
+    
+    for (NSDictionary *safeDict in existingSafes) {
+        SafeMetaData *safe = [SafeMetaData fromDictionary:safeDict];
+        
+        // TODO: Failure should only ever happen on initial load of 1.12.0 where someone has somehow got 2 identically named safes...
+        // virtually impossible
+        
+        if(![self add:safe]) {
+            safe.nickName = [[NSUUID UUID] UUIDString];
+            [self add:safe];
+        }
+    }
     
     [self.lock unlock];
 }
 
-- (void)removeSafe:(SafeMetaData *)safe {
-    NSMutableArray *changed = [NSMutableArray arrayWithArray:self.snapshot];
+- (void)save {
+    [self.lock lock];
     
-    [changed removeObject:safe];
-
-    self.snapshot = changed;
-
-    [self save];
-}
-
-- (void)add:(SafeMetaData *)safe {
-    if (![self isValidNickName:safe.nickName]) {
-        NSLog(@"Cannot Save Safe, as existing Safe exists with this nick name, or the name is invalid!");
+    NSMutableArray *sfs = [NSMutableArray arrayWithCapacity:(self.snapshot).count ];
+    
+    for (SafeMetaData *s in self.theCollection.allValues) {
+        [sfs addObject:s.toDictionary];
     }
     
-    NSMutableArray *changed = [NSMutableArray arrayWithArray:self.snapshot];
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:sfs forKey:@"safes"];
+    [userDefaults synchronize];
     
-    [changed addObject:safe];
-    
-    self.snapshot = changed;
-    
-    [self save];
+    [self.lock unlock];
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 - (NSArray<SafeMetaData*>*)sortedSafes {
     return [self.snapshot sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
@@ -112,37 +147,6 @@
         return item.storageProvider == storageProvider;
     }]];
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
-- (void)load {
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSArray *existingSafes = [userDefaults arrayForKey:@"safes"];
-    
-    NSMutableArray<SafeMetaData*>* loading = [NSMutableArray array];
-    for (NSDictionary *safeDict in existingSafes) {
-        SafeMetaData *safe = [SafeMetaData fromDictionary:safeDict];
-        [loading addObject:safe];
-    }
-    
-    self.snapshot = loading;
-}
-
-- (void)save {
-    NSMutableArray *sfs = [NSMutableArray arrayWithCapacity:(self.snapshot).count ];
-    
-    for (SafeMetaData *s in self.snapshot) {
-        [sfs addObject:s.toDictionary];
-    }
-    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    
-    [userDefaults setObject:sfs forKey:@"safes"];
-    
-    [userDefaults synchronize];
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
 
 + (NSString *)sanitizeSafeNickName:(NSString *)string {
     NSString *trimmed = [string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
