@@ -186,11 +186,26 @@
     }];
 }
 
+- (void)showiCloudMigrationUi:(BOOL)show {
+    if(show) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [SVProgressHUD showWithStatus:@"Migrating..."];
+        });
+    }
+    else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [SVProgressHUD dismiss];
+        });
+    }
+}
+
 - (void)continueICloudAvailableProcedure {
     // If iCloud newly switched on, move local docs to iCloud
     if ([Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudWasOn && [self getLocalDeviceSafes].count) {
         [Alerts info:self title:@"iCloud Available" message:@"Your previously local only safes are now being migrated to iCloud safes."];
-        [[iCloudAndLocalSafesCoordinator sharedInstance] migrateLocalToiCloud];
+        [[iCloudAndLocalSafesCoordinator sharedInstance] migrateLocalToiCloud:^(BOOL show) {
+            [self showiCloudMigrationUi:show];
+        }];
     }
 
     // If iCloud newly switched off, move iCloud docs to local
@@ -211,7 +226,9 @@
                             });
                         }
                         else if(response == 1) {      // @"Keep a Local Copy"
-                            [[iCloudAndLocalSafesCoordinator sharedInstance] migrateiCloudToLocal];
+                            [[iCloudAndLocalSafesCoordinator sharedInstance] migrateiCloudToLocal:^(BOOL show) {
+                                [self showiCloudMigrationUi:show];
+                            }];
                         }
                         else if(response == 0) {
                             [self removeAllICloudSafes];

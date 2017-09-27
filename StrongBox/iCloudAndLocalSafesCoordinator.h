@@ -18,12 +18,13 @@
 - (void)startCoordinating;
 
 @property (nonatomic, copy) void (^updateSafesCollection)(void);
+@property (nonatomic, copy) void (^showMigrationUi)(BOOL show);
 
 // Name ok?
 - (NSURL*)getDocURL:(NSString *)filename;
 - (NSString*)getDocFilename:(NSString *)prefix uniqueInObjects:(BOOL)uniqueInObjects;
 
-- (void)migrateLocalToiCloud;
-- (void)migrateiCloudToLocal;
+- (void)migrateLocalToiCloud:(void (^)(BOOL show)) completion;
+- (void)migrateiCloudToLocal:(void (^)(BOOL show)) completion;
 
 @end

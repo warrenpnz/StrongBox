@@ -65,7 +65,9 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     });
 }
 
-- (void)migrateLocalToiCloud {
+- (void)migrateLocalToiCloud:(void (^)(BOOL show)) completion {
+    self.showMigrationUi = completion;
+    
     if (_iCloudURLsReady) {
         [self localToiCloudImpl];
     }
@@ -74,8 +76,8 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     }
 }
 
-- (void)migrateiCloudToLocal {
-    NSLog(@"iCloud => local");
+- (void)migrateiCloudToLocal:(void (^)(BOOL show)) completion {
+    self.showMigrationUi = completion;
     
     if (_iCloudURLsReady) {
         [self iCloudToLocalImpl];
@@ -90,44 +92,47 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     NSString * displayName = safe.nickName;
     NSURL *destURL = [self getDocURL:[self getDocFilename:displayName uniqueInObjects:NO]];
     
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        NSError * error;
-        BOOL success = [[NSFileManager defaultManager] setUbiquitous:[Settings sharedInstance].iCloudOn itemAtURL:fileURL destinationURL:destURL error:&error];
-        if (success) {
-            NSLog(@"Moved %@ to %@", fileURL, destURL);
-            NSString* newNickName = [self displayNameFromUrl:destURL];
-            
-            // Migrate any touch ID entry for this safe
-            
-            NSString *password = [JNKeychain loadValueForKey:displayName];
-            if(password) {
-                [JNKeychain saveValue:password forKey:newNickName];
-            }
-            
-            safe.nickName = newNickName;
-            safe.storageProvider = kiCloud;
-            safe.fileIdentifier = destURL.absoluteString;
-            safe.fileName = [destURL lastPathComponent];
-            [SafesCollection.sharedInstance save];
+    NSError * error;
+    BOOL success = [[NSFileManager defaultManager] setUbiquitous:[Settings sharedInstance].iCloudOn itemAtURL:fileURL destinationURL:destURL error:&error];
+    
+    if (success) {
+        NSLog(@"Moved %@ to %@", fileURL, destURL);
+        NSString* newNickName = [self displayNameFromUrl:destURL];
+        
+        // Migrate any touch ID entry for this safe
+        
+        NSString *password = [JNKeychain loadValueForKey:displayName];
+        if(password) {
+            [JNKeychain saveValue:password forKey:newNickName];
         }
-        else {
-            NSLog(@"Failed to move %@ to %@: %@", fileURL, destURL, error.localizedDescription);
-        }
-    });
+        
+        safe.nickName = newNickName;
+        safe.storageProvider = kiCloud;
+        safe.fileIdentifier = destURL.absoluteString;
+        safe.fileName = [destURL lastPathComponent];
+        [SafesCollection.sharedInstance save];
+    }
+    else {
+        NSLog(@"Failed to move %@ to %@: %@", fileURL, destURL, error.localizedDescription);
+    }
 }
 
 - (void)localToiCloudImpl {
     [_query disableUpdates];
+
+    self.showMigrationUi(YES);
     
-    NSArray<SafeMetaData*> *localSafes = [SafesCollection.sharedInstance getSafesOfProvider:kLocalDevice];
-    
-    for(SafeMetaData *safe in localSafes) {
-        [self migrateLocalSafeToICloud:safe];
-    }
-    
-     self.updateSafesCollection();
-    
-    [_query enableUpdates];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+        NSArray<SafeMetaData*> *localSafes = [SafesCollection.sharedInstance getSafesOfProvider:kLocalDevice];
+
+        for(SafeMetaData *safe in localSafes) {
+            [self migrateLocalSafeToICloud:safe];
+        }
+
+        self.showMigrationUi(NO);
+        self.updateSafesCollection();
+        [_query enableUpdates];
+    });
 }
 
 - (void)createLocalDeviceSafe:(NSData *)data
@@ -181,11 +186,15 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     NSLog(@"iCloud => local impl");
  
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+        self.showMigrationUi(YES);
+        
         for (AppleICloudOrLocalSafeFile *file in [_iCloudFiles copy]) {
             [self migrateICloudSafeToLocal:file];
         }
         
         [self removeAllICloudSafes];
+        
+        self.showMigrationUi(NO);
         self.updateSafesCollection();
     });
 }

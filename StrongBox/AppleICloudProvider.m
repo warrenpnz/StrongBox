@@ -13,6 +13,7 @@
 #import "SafesCollection.h"
 #import "Settings.h"
 #import "iCloudAndLocalSafesCoordinator.h"
+#import "SVProgressHUD/SVProgressHUD.h"
 
 @implementation AppleICloudProvider
 
@@ -62,16 +63,22 @@
       parentFolder:(NSObject *)parentFolder
     viewController:(UIViewController *)viewController
         completion:(void (^)(SafeMetaData *metadata, NSError *error))completion {
-
     NSURL * fileURL = [self getDocURL:[self getDocFilename:nickName uniqueInObjects:YES]];
     
     NSLog(@"Want to create file at %@", fileURL);
     
-    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithData:data fileUrl:fileURL];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [SVProgressHUD showWithStatus:@"Uploading..."];
+    });
     
+    PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithData:data fileUrl:fileURL];
     NSLog(@"Loaded File URL: %@ in state: [%@]", [doc.fileURL lastPathComponent], [self stringForDocumentState:doc.documentState]);
 
     [doc saveToURL:fileURL forSaveOperation:UIDocumentSaveForCreating completionHandler:^(BOOL success) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [SVProgressHUD dismiss];
+        });
+        
         if (!success) {
             NSLog(@"Failed to create file at %@", fileURL);
             completion(nil, [Utils createNSError:@"Failed to create file" errorCode:-5]);
@@ -101,7 +108,15 @@
     NSURL *fileUrl = [NSURL URLWithString:safeMetaData.fileIdentifier];
     PasswordSafeUIDocument * doc = [[PasswordSafeUIDocument alloc] initWithFileURL:fileUrl];
     
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [SVProgressHUD showWithStatus:@"Reading..."];
+    });
+    
     [doc openWithCompletionHandler:^(BOOL success) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [SVProgressHUD dismiss];
+        });
+        
         if (!success) {
             NSLog(@"Failed to open %@", fileUrl);
             completion(nil, [Utils createNSError:@"Failed to open" errorCode:-6]);
@@ -133,7 +148,15 @@
     
     NSLog(@"Opened File URL: %@ in state: [%@]", [doc.fileURL lastPathComponent], [self stringForDocumentState:doc.documentState]);
 
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [SVProgressHUD showWithStatus:@"Updating..."];
+    });
+    
     [doc saveToURL:fileUrl forSaveOperation:UIDocumentSaveForOverwriting completionHandler:^(BOOL success) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [SVProgressHUD dismiss];
+        });
+        
         if (!success) {
             NSLog(@"Failed to update file at %@", fileUrl);
             completion([Utils createNSError:@"Failed to update file" errorCode:-5]);
