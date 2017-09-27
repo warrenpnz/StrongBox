@@ -12,6 +12,7 @@
 #import "LocalDeviceStorageProvider.h"
 #import "Strongbox.h"
 #import "SafesCollection.h"
+#import "JNKeychain.h"
 
 @implementation iCloudAndLocalSafesCoordinator
 
@@ -87,17 +88,6 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     NSURL *fileURL = [[LocalDeviceStorageProvider sharedInstance] getFileUrl:safe];
     
     NSString * displayName = safe.nickName;
-    
-    BOOL updateMetaData = NO;
-    if([self docNameExistsIniCloudURLs:[self docNameFromDisplayName:displayName]]) {
-        NSLog(@"Name conflict up in cloud, appending -migrated");
-        displayName = [displayName stringByAppendingString:@"-Migrated"];
-    }
-    else {
-        NSLog(@"Optimistic Migration ok for [%@]", safe.nickName);
-        updateMetaData = YES;
-    }
-    
     NSURL *destURL = [self getDocURL:[self getDocFilename:displayName uniqueInObjects:NO]];
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
@@ -105,20 +95,20 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
         BOOL success = [[NSFileManager defaultManager] setUbiquitous:[Settings sharedInstance].iCloudOn itemAtURL:fileURL destinationURL:destURL error:&error];
         if (success) {
             NSLog(@"Moved %@ to %@", fileURL, destURL);
+            NSString* newNickName = [self displayNameFromUrl:destURL];
             
-            [LocalDeviceStorageProvider.sharedInstance delete:safe completion:^(NSError *error) {
-                NSLog(@"Safe File Deleted. %@", error);
-            }];
+            // Migrate any touch ID entry for this safe
             
-            if(updateMetaData) {
-                safe.storageProvider = kiCloud;
-                safe.fileIdentifier = destURL.absoluteString;
-                safe.fileName = [destURL lastPathComponent];
-                [SafesCollection.sharedInstance save];
+            NSString *password = [JNKeychain loadValueForKey:displayName];
+            if(password) {
+                [JNKeychain saveValue:password forKey:newNickName];
             }
-            else {
-                [SafesCollection.sharedInstance removeSafe:safe]; // Will be added via iCloud query
-            }
+            
+            safe.nickName = newNickName;
+            safe.storageProvider = kiCloud;
+            safe.fileIdentifier = destURL.absoluteString;
+            safe.fileName = [destURL lastPathComponent];
+            [SafesCollection.sharedInstance save];
         }
         else {
             NSLog(@"Failed to move %@ to %@: %@", fileURL, destURL, error.localizedDescription);
@@ -164,26 +154,35 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
      }];
 }
 
+- (void)migrateICloudSafeToLocal:(AppleICloudOrLocalSafeFile *)file {
+    SafeMetaData* metadata = [self tryToFindMetadataForiCloudFile:file.fileUrl]; // Try to preserve metadata
+    
+    if(metadata) {
+        [SafesCollection.sharedInstance removeSafe:metadata]; // Remove this safe so we can add local with same nick name
+    }
+    
+    NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+    [fileCoordinator coordinateReadingItemAtURL:file.fileUrl options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
+        NSData* data = [NSData dataWithContentsOfURL:newURL];
+        NSString *nickName = metadata ? metadata.nickName : [self displayNameFromUrl:newURL];
+        BOOL isTouchIdEnabled = metadata ? metadata.isTouchIdEnabled : YES;
+        BOOL isEnrolledForTouchId = metadata ? metadata.isEnrolledForTouchId : NO;
+    
+        NSString *touchIdPassword = [JNKeychain loadValueForKey:metadata.nickName];
+        if(touchIdPassword) {
+            [JNKeychain saveValue:touchIdPassword forKey:nickName];
+        }
+    
+        [self createLocalDeviceSafe:data newURL:newURL nickName:nickName isTouchIdEnabled:isTouchIdEnabled isEnrolledForTouchId:isEnrolledForTouchId];
+    }];
+}
+
 - (void)iCloudToLocalImpl {
     NSLog(@"iCloud => local impl");
  
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
         for (AppleICloudOrLocalSafeFile *file in [_iCloudFiles copy]) {
-            SafeMetaData* metadata = [self tryToFindMetadataForiCloudFile:file.fileUrl]; // Try to preserve metadata
-            
-            if(metadata) {
-                [SafesCollection.sharedInstance removeSafe:metadata]; // Remove this safe so we can add local with same nick name
-            }
-            
-            NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-            [fileCoordinator coordinateReadingItemAtURL:file.fileUrl options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
-                NSData* data = [NSData dataWithContentsOfURL:newURL];
-                NSString *nickName = metadata ? metadata.nickName : [self displayNameFromUrl:newURL];
-                BOOL isTouchIdEnabled = metadata ? metadata.isTouchIdEnabled : YES;
-                BOOL isEnrolledForTouchId = metadata ? metadata.isEnrolledForTouchId : NO;
-                
-                [self createLocalDeviceSafe:data newURL:newURL nickName:nickName isTouchIdEnabled:isTouchIdEnabled isEnrolledForTouchId:isEnrolledForTouchId];
-            }];
+            [self migrateICloudSafeToLocal:file];
         }
         
         [self removeAllICloudSafes];
