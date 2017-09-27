@@ -139,12 +139,36 @@
     }
 }
 
+
+- (BOOL)hasLocalOrICloudSafes {
+    return ([SafesCollection.sharedInstance getSafesOfProvider:kLocalDevice].count + [SafesCollection.sharedInstance getSafesOfProvider:kiCloud].count) > 0;
+}
+
 - (IBAction)onUseICloud:(id)sender {
     NSLog(@"Setting iCloudOn to %d", self.switchUseICloud.on);
     
-    [[Settings sharedInstance] setICloudOn:self.switchUseICloud.on];
-    
-    [self bindUseICloud];
+    if([self hasLocalOrICloudSafes]) {
+        [Alerts yesNo:self title:@"Master Password Warning"
+             message:@"It is very important that you know your master password for your safes, and that you are not relying entirely on Touch ID.\n"
+                     @"The migration and importation process makes every effort to maintain Touch ID data but it is not guaranteed. "
+                     @"In any case it is important that you always know your master passwords.\n\n"
+                     @"Do you want to continue changing iCloud usage settings?"
+              action:^(BOOL response) {
+            if(response) {
+                [[Settings sharedInstance] setICloudOn:self.switchUseICloud.on];
+                
+                [self bindUseICloud];
+            }
+            else {
+                self.switchUseICloud.on = !self.switchUseICloud.on;
+            }
+        }];
+    }
+    else {
+        [[Settings sharedInstance] setICloudOn:self.switchUseICloud.on];
+        
+        [self bindUseICloud];
+    }
 }
 
 - (IBAction)onSignoutGoogleDrive:(id)sender {

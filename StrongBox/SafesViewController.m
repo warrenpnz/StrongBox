@@ -80,14 +80,12 @@
     [super viewDidLoad];
 
     self.collection = [NSArray array];
-    
-    [iCloudAndLocalSafesCoordinator sharedInstance].updateSafesCollection = ^{
-        dispatch_async(dispatch_get_main_queue(), ^(void) {
-            [self refreshView];
-        });
-    };
 
     [self customizeUi];
+    
+    [iCloudAndLocalSafesCoordinator sharedInstance].updateSafesCollection = ^{
+        [self iCloudSafesUpdateHandler];
+    };
     
     if(![[Settings sharedInstance] isPro]) {
         [self getValidIapProducts];
@@ -103,8 +101,15 @@
         [self showStartupMessaging];
     }
     
-    // Add to the bottom of viewDidLoad
+    // User may have just switched to our app after updating iCloud settings...
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+}
+
+- (void)iCloudSafesUpdateHandler {
+    dispatch_async(dispatch_get_main_queue(), ^(void) {
+        [self refreshView];
+    });
 }
 
 - (BOOL)hasSafesOtherThanLocalAndiCloud {
@@ -965,7 +970,9 @@ static BOOL shownNagScreenThisSession = NO;
 }
 
 -(void)bindProOrFreeTrialUi {
-    self.navigationController.toolbar.hidden = [[Settings sharedInstance] isPro];
+    if(self.navigationController.visibleViewController == self) {
+        self.navigationController.toolbar.hidden = [[Settings sharedInstance] isPro];
+    }
     
     //[self.buttonTogglePro setTitle:(![[Settings sharedInstance] isProOrFreeTrial] ? @"Go Pro" : @"Go Free")];
     //[self.buttonTogglePro setEnabled:NO];
