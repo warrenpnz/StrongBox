@@ -15,14 +15,13 @@
 + (instancetype)sharedInstance;
 
 - (void)initializeiCloudAccessWithCompletion:(void (^)(BOOL available)) completion;
-- (void)startCoordinating;
+- (void)startQuery;
 
 @property (nonatomic, copy) void (^updateSafesCollection)(void);
 @property (nonatomic, copy) void (^showMigrationUi)(BOOL show);
 
-// Name ok?
-- (NSURL*)getDocURL:(NSString *)filename;
-- (NSString*)getDocFilename:(NSString *)prefix uniqueInObjects:(BOOL)uniqueInObjects;
+-(NSURL*)getFullICloudURLWithFileName:(NSString *)filename;
+-(NSString*)getUniqueICloudFilename:(NSString *)prefix;
 
 - (void)migrateLocalToiCloud:(void (^)(BOOL show)) completion;
 - (void)migrateiCloudToLocal:(void (^)(BOOL show)) completion;

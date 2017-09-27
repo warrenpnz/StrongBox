@@ -20,4 +20,8 @@
     return self;
 }
 
+-(NSString *)description {
+    return [NSString stringWithFormat:@"%@-%@", self.displayName, [self.fileUrl lastPathComponent]];
+}
+
 @end

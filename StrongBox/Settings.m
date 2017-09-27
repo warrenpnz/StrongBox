@@ -329,4 +329,26 @@ static NSString* kiCloudPrompted = @"iCloudPrompted";
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
+
+- (NSString*)getFlagsStringForDiagnostics {
+    return [NSString stringWithFormat:@"[%d%d%d%d[%ld]%d%d[%ld][%@]%ld%d%d%d%d%d%d%d]",
+    self.isOffline,
+    self.isShowPasswordByDefaultOnEditScreen,
+    self.isHavePromptedAboutFreeTrial,
+    self.isProOrFreeTrial,
+    (long)self.getTouchId911Count,
+    self.isPro,
+    self.isFreeTrial,
+    (long)self.getLaunchCount,
+    self.getAutoLockTimeoutSeconds,
+    (long)self.isUserHasBeenPromptedForReview,
+    self.isHasPromptedForCopyPasswordGesture,
+    self.isCopyPasswordOnLongPress,
+    self.neverShowForMacAppMessage,
+    self.iCloudOn,
+    self.iCloudWasOn,
+    self.iCloudPrompted,
+    self.iCloudAvailable];
+}
+
 @end

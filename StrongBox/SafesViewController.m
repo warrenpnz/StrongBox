@@ -128,7 +128,7 @@
     NSArray<SafeMetaData*> *icloudSafesToRemove = [self getICloudSafes];
     
     for (SafeMetaData *item in icloudSafesToRemove) {
-        [SafesCollection.sharedInstance removeSafe:item];
+        [SafesCollection.sharedInstance removeSafe:item.nickName];
     }
     
     dispatch_async(dispatch_get_main_queue(), ^(void) {
@@ -237,7 +237,7 @@
     }
 
     [Settings sharedInstance].iCloudWasOn = [Settings sharedInstance].iCloudOn;
-    [[iCloudAndLocalSafesCoordinator sharedInstance] startCoordinating];
+    [[iCloudAndLocalSafesCoordinator sharedInstance] startQuery];
 }
 
 - (void)customizeUi {
@@ -439,8 +439,7 @@
                                                                   }];
     }
          
-    [[SafesCollection sharedInstance] removeSafe:safe];
-    [[SafesCollection sharedInstance] save];
+    [[SafesCollection sharedInstance] removeSafe:safe.nickName];
 
     dispatch_async(dispatch_get_main_queue(), ^(void) {
         [self setEditing:NO];

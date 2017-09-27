@@ -27,4 +27,6 @@
 
 - (NSArray<SafeMetaData*>* _Nonnull)getSafesOfProvider:(StorageProvider)storageProvider;
 
+- (BOOL)changeNickName:(NSString*_Nonnull)nickName newNickName:(NSString*_Nonnull)newNickName;
+
 @end

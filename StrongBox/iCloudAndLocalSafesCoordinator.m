@@ -26,7 +26,7 @@ BOOL _iCloudURLsReady;
 NSMutableArray<AppleICloudOrLocalSafeFile*> * _iCloudFiles;
 BOOL _pleaseCopyiCloudToLocalWhenReady;
 BOOL _pleaseMoveLocalToiCloudWhenReady;
-
+BOOL _migrationInProcess;
 
 + (instancetype)sharedInstance {
     static iCloudAndLocalSafesCoordinator *sharedInstance = nil;
@@ -67,6 +67,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
 
 - (void)migrateLocalToiCloud:(void (^)(BOOL show)) completion {
     self.showMigrationUi = completion;
+    _migrationInProcess = YES;
     
     if (_iCloudURLsReady) {
         [self localToiCloudImpl];
@@ -78,27 +79,69 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
 
 - (void)migrateiCloudToLocal:(void (^)(BOOL show)) completion {
     self.showMigrationUi = completion;
+    _migrationInProcess = YES;
     
     if (_iCloudURLsReady) {
         [self iCloudToLocalImpl];
-    } else {
+    }
+    else {
         _pleaseCopyiCloudToLocalWhenReady = YES;
     }
+}
+
+- (void)localToiCloudImpl {
+    NSLog(@"local => iCloud impl [%lu]", (unsigned long)_iCloudFiles.count);
+    
+    self.showMigrationUi(YES);
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+        NSArray<SafeMetaData*> *localSafes = [SafesCollection.sharedInstance getSafesOfProvider:kLocalDevice];
+        
+        for(SafeMetaData *safe in localSafes) {
+            [self migrateLocalSafeToICloud:safe];
+        }
+        
+        self.showMigrationUi(NO);
+        [SafesCollection.sharedInstance save];
+        self.updateSafesCollection();
+        
+        _migrationInProcess = NO;
+    });
+}
+
+- (void)iCloudToLocalImpl {
+    NSLog(@"iCloud => local impl  [%lu]", (unsigned long)_iCloudFiles.count);
+    
+    self.showMigrationUi(YES);
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
+        NSArray<SafeMetaData*> *iCloudSafes = [SafesCollection.sharedInstance getSafesOfProvider:kiCloud];
+        
+        for(SafeMetaData *safe in iCloudSafes) {
+            [self migrateICloudSafeToLocal:safe];
+        }
+        
+        self.showMigrationUi(NO);
+        [SafesCollection.sharedInstance save];
+        self.updateSafesCollection();
+        
+        _migrationInProcess = NO;
+    });
 }
 
 - (void)migrateLocalSafeToICloud:(SafeMetaData *)safe {
     NSURL *fileURL = [[LocalDeviceStorageProvider sharedInstance] getFileUrl:safe];
     
     NSString * displayName = safe.nickName;
-    NSURL *destURL = [self getDocURL:[self getDocFilename:displayName uniqueInObjects:NO]];
+    NSURL *destURL = [self getFullICloudURLWithFileName:[self getUniqueICloudFilename:displayName]];
     
     NSError * error;
     BOOL success = [[NSFileManager defaultManager] setUbiquitous:[Settings sharedInstance].iCloudOn itemAtURL:fileURL destinationURL:destURL error:&error];
     
     if (success) {
-        NSLog(@"Moved %@ to %@", fileURL, destURL);
         NSString* newNickName = [self displayNameFromUrl:destURL];
-        
+        NSLog(@"New Nickname = [%@] Moved %@ to %@", newNickName, fileURL, destURL);
+
         // Migrate any touch ID entry for this safe
         
         NSString *password = [JNKeychain loadValueForKey:displayName];
@@ -106,97 +149,51 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
             [JNKeychain saveValue:password forKey:newNickName];
         }
         
-        safe.nickName = newNickName;
+        if(![safe.nickName isEqualToString:newNickName]) {
+            [SafesCollection.sharedInstance changeNickName:safe.nickName newNickName:newNickName];
+        }
+        
         safe.storageProvider = kiCloud;
         safe.fileIdentifier = destURL.absoluteString;
         safe.fileName = [destURL lastPathComponent];
-        [SafesCollection.sharedInstance save];
     }
     else {
         NSLog(@"Failed to move %@ to %@: %@", fileURL, destURL, error.localizedDescription);
     }
 }
 
-- (void)localToiCloudImpl {
-    [_query disableUpdates];
-
-    self.showMigrationUi(YES);
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        NSArray<SafeMetaData*> *localSafes = [SafesCollection.sharedInstance getSafesOfProvider:kLocalDevice];
-
-        for(SafeMetaData *safe in localSafes) {
-            [self migrateLocalSafeToICloud:safe];
-        }
-
-        self.showMigrationUi(NO);
-        self.updateSafesCollection();
-        [_query enableUpdates];
-    });
-}
-
-- (void)createLocalDeviceSafe:(NSData *)data
-                       newURL:(NSURL *)newURL
-                     nickName:(NSString *)nickName
-             isTouchIdEnabled:(BOOL)isTouchIdEnabled
-         isEnrolledForTouchId:(BOOL)isEnrolledForTouchId
-{
-    [[LocalDeviceStorageProvider sharedInstance] create:nickName data:data parentFolder:nil viewController:nil completion:^(SafeMetaData *metadata, NSError *error)
-     {
-         if (error == nil) {
-             NSLog(@"Copied %@ to %@ (%d)", newURL, metadata.fileIdentifier, [Settings sharedInstance].iCloudOn);
-             
-             metadata.isEnrolledForTouchId = isEnrolledForTouchId;
-             metadata.isTouchIdEnabled = isTouchIdEnabled;
-             
-             [SafesCollection.sharedInstance add:metadata];
-         }
-         else {
-             NSLog(@"An error occurred: %@", error);
-             NSLog(@"Failed to copy %@ to %@: %@", newURL, metadata.fileIdentifier, error.localizedDescription);
-             // TODO:
-         }
-     }];
-}
-
-- (void)migrateICloudSafeToLocal:(AppleICloudOrLocalSafeFile *)file {
-    SafeMetaData* metadata = [self tryToFindMetadataForiCloudFile:file.fileUrl]; // Try to preserve metadata
-    
-    if(metadata) {
-        [SafesCollection.sharedInstance removeSafe:metadata.nickName]; // Remove this safe so we can add local with same nick name
-    }
-    
+- (void)migrateICloudSafeToLocal:(SafeMetaData *)safe {
     NSFileCoordinator* fileCoordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-    [fileCoordinator coordinateReadingItemAtURL:file.fileUrl options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
+    [fileCoordinator coordinateReadingItemAtURL:[NSURL URLWithString:safe.fileIdentifier] options:NSFileCoordinatorReadingWithoutChanges error:nil byAccessor:^(NSURL *newURL) {
         NSData* data = [NSData dataWithContentsOfURL:newURL];
-        NSString *nickName = metadata ? metadata.nickName : [self displayNameFromUrl:newURL];
-        BOOL isTouchIdEnabled = metadata ? metadata.isTouchIdEnabled : YES;
-        BOOL isEnrolledForTouchId = metadata ? metadata.isEnrolledForTouchId : NO;
-    
-        NSString *touchIdPassword = [JNKeychain loadValueForKey:metadata.nickName];
-        if(touchIdPassword) {
-            [JNKeychain saveValue:touchIdPassword forKey:nickName];
-        }
-    
-        [self createLocalDeviceSafe:data newURL:newURL nickName:nickName isTouchIdEnabled:isTouchIdEnabled isEnrolledForTouchId:isEnrolledForTouchId];
+      
+        [[LocalDeviceStorageProvider sharedInstance] create:safe.nickName
+                                                       data:data
+                                               parentFolder:nil
+                                             viewController:nil
+                                                 completion:^(SafeMetaData *metadata, NSError *error)
+         {
+             if (error == nil) {
+                 NSLog(@"Copied %@ to %@ (%d)", newURL, metadata.fileIdentifier, [Settings sharedInstance].iCloudOn);
+                 
+                 // Migrate any touch ID entry for this safe
+                 
+                 NSString *password = [JNKeychain loadValueForKey:safe.nickName];
+                 if(password) {
+                     [JNKeychain saveValue:password forKey:metadata.nickName];
+                 }
+                 
+                 [SafesCollection.sharedInstance changeNickName:safe.nickName newNickName:metadata.nickName];
+                 
+                 safe.storageProvider = kLocalDevice;
+                 safe.fileIdentifier = metadata.fileIdentifier;
+                 safe.fileName = metadata.fileName;
+             }
+             else {
+                 NSLog(@"Failed to copy %@ to %@: %@", newURL, metadata.fileIdentifier, error.localizedDescription);
+             }
+         }];
     }];
-}
-
-- (void)iCloudToLocalImpl {
-    NSLog(@"iCloud => local impl");
- 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void) {
-        self.showMigrationUi(YES);
-        
-        for (AppleICloudOrLocalSafeFile *file in [_iCloudFiles copy]) {
-            [self migrateICloudSafeToLocal:file];
-        }
-        
-        [self removeAllICloudSafes];
-        
-        self.showMigrationUi(NO);
-        self.updateSafesCollection();
-    });
 }
 
 - (SafeMetaData*)tryToFindMetadataForiCloudFile:(NSURL*) url {
@@ -242,7 +239,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     }
 }
 
-- (void)startCoordinating {
+- (void)startQuery {
     [self stopQuery];
     
     _iCloudURLsReady = NO;
@@ -266,7 +263,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
 }
 
 - (NSString*)displayNameFromUrl:(NSURL*)url {
-    return [url.lastPathComponent stringByDeletingPathExtension];
+    return [[url.lastPathComponent stringByDeletingPathExtension] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }
 
 - (void)logAllCloudStorageKeysForMetadataItem:(NSMetadataItem *)item
@@ -330,7 +327,11 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
             NSNumber *hasUnresolvedConflicts = [result valueForAttribute:NSMetadataUbiquitousItemHasUnresolvedConflictsKey];
             BOOL huc = hasUnresolvedConflicts ? [hasUnresolvedConflicts boolValue] : NO;
             
-            [_iCloudFiles addObject:[[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:dn fileUrl:fileURL hasUnresolvedConflicts:huc]];
+            AppleICloudOrLocalSafeFile* iCloudFile = [[AppleICloudOrLocalSafeFile alloc] initWithDisplayName:dn fileUrl:fileURL hasUnresolvedConflicts:huc];
+            
+            NSLog(@"Found on iCloud: %@", iCloudFile);
+            
+            [_iCloudFiles addObject:iCloudFile];
         }
     }
     //NSLog(@"*********************************************************************************************************");
@@ -339,7 +340,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     
     _iCloudURLsReady = YES;
     
-    if ([Settings sharedInstance].iCloudOn) {
+    if ([Settings sharedInstance].iCloudOn && !_migrationInProcess) {
         [self iCloudFilesDidChange:_iCloudFiles];
     }
 
@@ -355,7 +356,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     [_query enableUpdates];
 }
 
-- (NSURL *)getDocURL:(NSString *)filename {
+- (NSURL *)getFullICloudURLWithFileName:(NSString *)filename {
     NSURL * docsDir = [_iCloudRoot URLByAppendingPathComponent:@"Documents" isDirectory:YES];
     return [docsDir URLByAppendingPathComponent:filename];
 }
@@ -375,11 +376,11 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     return nameExists;
 }
 
-- (BOOL)docNameExistsInObjects:(NSString *)docName {
+- (BOOL)nickNameExistsInSafes:(NSString *)nickName {
     BOOL nameExists = NO;
     
     for (SafeMetaData *entry in [SafesCollection sharedInstance].sortedSafes) {
-        if (entry.storageProvider == kiCloud && [entry.fileName isEqualToString:docName]) {
+        if ([entry.nickName isEqualToString:nickName]) {
             nameExists = YES;
             break;
         }
@@ -388,7 +389,34 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
     return nameExists;
 }
 
--(NSString*)getDocFilename:(NSString *)prefix uniqueInObjects:(BOOL)uniqueInObjects {
+-(NSString*)getUniqueNickName:(NSString *)prefix {
+    NSInteger docCount = 0;
+    NSString* newDocName = nil;
+    
+    BOOL done = NO;
+    BOOL first = YES;
+    while (!done) {
+        if (first) {
+            first = NO;
+            newDocName = [NSString stringWithFormat:@"%@", prefix];
+        } else {
+            newDocName = [NSString stringWithFormat:@"%@ %ld", prefix, (long)docCount];
+        }
+        
+        BOOL nameExists = [self nickNameExistsInSafes:newDocName];
+        
+        
+        if (!nameExists) {
+            break;
+        } else {
+            docCount++;
+        }
+    }
+    
+    return newDocName;
+}
+
+-(NSString*)getUniqueICloudFilename:(NSString *)prefix {
     NSInteger docCount = 0;
     NSString* newDocName = nil;
     
@@ -405,12 +433,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
                           prefix, (long)docCount, kDefaultFileExtension];
         }
         
-        BOOL nameExists;
-        if (uniqueInObjects) {
-            nameExists = [self docNameExistsInObjects:newDocName];
-        } else {
-            nameExists = [self docNameExistsIniCloudURLs:newDocName];
-        }
+        BOOL nameExists = [self docNameExistsIniCloudURLs:newDocName];
         
         if (!nameExists) {
             break;
@@ -473,7 +496,7 @@ BOOL _pleaseMoveLocalToiCloudWhenReady;
         SafeMetaData *newSafe = [[SafeMetaData alloc] initWithNickName:displayName storageProvider:kiCloud fileName:fileName fileIdentifier:[safeFile.fileUrl absoluteString]];
         newSafe.hasUnresolvedConflicts = safeFile.hasUnresolvedConflicts;
         
-        NSLog(@"Got New Safe... Adding [%@]", newSafe);
+        NSLog(@"Got New Safe... Adding [%@]", newSafe.nickName);
         
         [[SafesCollection sharedInstance] add:newSafe];
         

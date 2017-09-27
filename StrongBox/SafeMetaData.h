@@ -22,7 +22,9 @@ typedef NS_ENUM (unsigned int, StorageProvider) {
                         fileName:(NSString*)fileName
                   fileIdentifier:(NSString*)fileIdentifier;
 
-@property (nonatomic, strong) NSString *nickName;
+- (void)changeNickName:(NSString*)newNickName;
+
+@property (nonatomic, strong, readonly) NSString *nickName;
 @property (nonatomic, strong) NSString *fileName;
 @property (nonatomic, strong) NSString *fileIdentifier;
 @property (nonatomic) StorageProvider storageProvider;

@@ -228,7 +228,7 @@
                          @"Model: %@<br />"
                          @"System Name: %@<br />"
                          @"System Version: %@<br />"
-                         @"Flags: %@%@", safesMessage, model, systemName, systemVersion, pro, isFreeTrial];
+                         @"Flags: %@%@%@", safesMessage, model, systemName, systemVersion, pro, isFreeTrial, [Settings.sharedInstance getFlagsStringForDiagnostics]];
     
     MFMailComposeViewController *picker = [[MFMailComposeViewController alloc] init];
     

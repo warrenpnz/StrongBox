@@ -12,7 +12,6 @@
 
 @interface SafesCollection ()
 
-@property (atomic, nonnull) NSRecursiveLock *lock;
 @property (nonatomic, nonnull) NSMutableDictionary<NSString*, SafeMetaData*> *theCollection;
 @property (nonatomic, nonnull, readonly) NSArray<SafeMetaData*> *snapshot;
 
@@ -32,7 +31,7 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        self.lock = [[NSRecursiveLock alloc] init];
+        
         self.theCollection = [[NSMutableDictionary alloc] init];
         
         [self load];
@@ -45,48 +44,64 @@
 }
 
 - (NSArray<SafeMetaData *> *)snapshot {
-    [self.lock lock];
-
-    NSArray<SafeMetaData*> *copy = [self.theCollection.allValues copy];
-
-    [self.lock unlock];
-
-    return copy;
+    return self.theCollection.allValues;
 }
 
 - (void)removeSafe:(NSString*)safeName {
-    [self.lock lock];
-    
     [self.theCollection removeObjectForKey:safeName];
     [self save];
-    
-    [self.lock unlock];
-
 }
 
-- (BOOL)add:(SafeMetaData *)safe {
-    [self.lock lock];
-    
+- (BOOL)internalNoSaveAdd:(SafeMetaData *)safe {
     if ([self.theCollection objectForKey:safe.nickName] || ![self isValidNickName:safe.nickName]) {
-        NSLog(@"Cannot Save Safe, as existing Safe exists with this nick name, or the name is invalid!");
+        NSLog(@"Cannot Save Safe as [%@], as existing Safe exists with this nick name, or the name is invalid!", safe.nickName);
+        NSLog(@"*******************************************************************************************");
+        
+        for (NSString* foo in self.theCollection.allKeys)
+        {
+            NSLog(@"%@", foo);
+        }
+        
+        NSLog(@"*******************************************************************************************");
         return NO;
     }
     
     [self.theCollection setObject:safe forKey:safe.nickName];
-    [self save];
-    
-    [self.lock unlock];
     
     return YES;
+}
+
+- (BOOL)add:(SafeMetaData *)safe {
+    BOOL ret = [self internalNoSaveAdd:safe];
+    
+    [self save];
+   
+    return ret;
+}
+
+- (BOOL)changeNickName:(NSString*)nickName newNickName:(NSString*)newNickName {
+    SafeMetaData* metadata = [self.theCollection objectForKey:nickName];
+    
+    if(![self.theCollection objectForKey:newNickName]) {
+        [metadata changeNickName:newNickName];
+    
+        [self.theCollection setObject:metadata forKey:newNickName];
+        [self.theCollection removeObjectForKey:nickName];
+        [self save];
+        
+        return YES;
+    }
+    
+    return NO;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)load {
+    self.theCollection = [NSMutableDictionary dictionary];
+    
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSArray *existingSafes = [userDefaults arrayForKey:@"safes"];
-    
-    [self.lock lock];
     
     for (NSDictionary *safeDict in existingSafes) {
         SafeMetaData *safe = [SafeMetaData fromDictionary:safeDict];
@@ -94,18 +109,14 @@
         // TODO: Failure should only ever happen on initial load of 1.12.0 where someone has somehow got 2 identically named safes...
         // virtually impossible
         
-        if(![self add:safe]) {
-            safe.nickName = [[NSUUID UUID] UUIDString];
-            [self add:safe];
+        if(![self internalNoSaveAdd:safe]) {
+            [safe changeNickName:[[NSUUID UUID] UUIDString]];
+            [self internalNoSaveAdd:safe];
         }
     }
-    
-    [self.lock unlock];
 }
 
 - (void)save {
-    [self.lock lock];
-    
     NSMutableArray *sfs = [NSMutableArray arrayWithCapacity:(self.snapshot).count ];
     
     for (SafeMetaData *s in self.theCollection.allValues) {
@@ -115,8 +126,6 @@
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setObject:sfs forKey:@"safes"];
     [userDefaults synchronize];
-    
-    [self.lock unlock];
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +171,15 @@
 - (BOOL)isValidNickName:(NSString *)nickName {
     NSString *sanitized = [SafesCollection sanitizeSafeNickName:nickName];
     
-    return [sanitized isEqualToString:nickName] && nickName.length > 0 && ![[self getAllNickNamesLowerCase] containsObject:nickName.lowercaseString];
+    NSSet<NSString*> *nicknamesLowerCase = [self getAllNickNamesLowerCase];
+
+    NSLog(@"*********************************************************************************************************");
+    for(NSString *existing in nicknamesLowerCase) {
+        NSLog(@"SafesCollection: [%@] checked against [%@] == %d", existing, nickName, [nickName.lowercaseString isEqualToString:existing]);
+    }
+    NSLog(@"*********************************************************************************************************");
+
+    return [sanitized isEqualToString:nickName] && nickName.length > 0 && ![nicknamesLowerCase containsObject:nickName.lowercaseString];
 }
 
 - (BOOL)safeWithTouchIdIsAvailable {

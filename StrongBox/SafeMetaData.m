@@ -15,7 +15,7 @@
                         fileName:(NSString*)fileName
                   fileIdentifier:(NSString*)fileIdentifier {
     if(self = [super init]) {
-        self.nickName = nickName;
+        _nickName = nickName;
         self.storageProvider = storageProvider;
         self.fileName = fileName;
         self.fileIdentifier = fileIdentifier;
@@ -26,6 +26,11 @@
     
     return self;
 }
+
+- (void)changeNickName:(NSString*)newNickName {
+    _nickName = newNickName;
+}
+
 
 - (NSDictionary *)toDictionary {
     NSMutableDictionary *dictionary =
@@ -56,11 +61,7 @@
 }
 
 + (SafeMetaData *)fromDictionary:(NSDictionary *)dictionary {
-    SafeMetaData *ret = [[SafeMetaData alloc] init];
-
-    ret.nickName = dictionary[@"nickName"];
-    ret.fileIdentifier = dictionary[@"fileIdentifier"];
-    ret.fileName = dictionary[@"fileName"];
+    SafeMetaData *ret = [[SafeMetaData alloc] initWithNickName:dictionary[@"nickName"] storageProvider:-1 fileName:dictionary[@"fileName"] fileIdentifier:dictionary[@"fileIdentifier"]];
 
     NSNumber *sp = [dictionary valueForKey:@"storageProvider"];
     ret.storageProvider = sp ? sp.intValue : kGoogleDrive;

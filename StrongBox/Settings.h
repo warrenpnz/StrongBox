@@ -55,4 +55,6 @@
 @property (nonatomic) BOOL iCloudPrompted;
 @property (nonatomic) BOOL iCloudAvailable;
 
+- (NSString*)getFlagsStringForDiagnostics;
+
 @end

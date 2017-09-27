@@ -50,12 +50,12 @@
     return @"icloud-32";
 }
 
-- (NSURL*)getDocURL:(NSString *)filename {
-    return [[iCloudAndLocalSafesCoordinator sharedInstance] getDocURL:filename];
+- (NSURL*)getFullICloudURLWithFileName:(NSString *)filename {
+    return [[iCloudAndLocalSafesCoordinator sharedInstance] getFullICloudURLWithFileName:filename];
 }
 
-- (NSString*)getDocFilename:(NSString *)prefix uniqueInObjects:(BOOL)uniqueInObjects {
-    return [[iCloudAndLocalSafesCoordinator sharedInstance] getDocFilename:prefix uniqueInObjects:uniqueInObjects];
+- (NSString*)getUniqueICloudFilename:(NSString *)prefix {
+    return [[iCloudAndLocalSafesCoordinator sharedInstance] getUniqueICloudFilename:prefix];
 }
 
 - (void)    create:(NSString *)nickName
@@ -63,7 +63,7 @@
       parentFolder:(NSObject *)parentFolder
     viewController:(UIViewController *)viewController
         completion:(void (^)(SafeMetaData *metadata, NSError *error))completion {
-    NSURL * fileURL = [self getDocURL:[self getDocFilename:nickName uniqueInObjects:YES]];
+    NSURL * fileURL = [self getFullICloudURLWithFileName:[self getUniqueICloudFilename:nickName]];
     
     NSLog(@"Want to create file at %@", fileURL);
     
