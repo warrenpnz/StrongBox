@@ -75,7 +75,6 @@
 - (void)add:(SafeMetaData *)safe {
     if (![self isValidNickName:safe.nickName]) {
         NSLog(@"Cannot Save Safe, as existing Safe exists with this nick name, or the name is invalid!");
-        return;
     }
     
     NSMutableArray *changed = [NSMutableArray arrayWithArray:self.snapshot];

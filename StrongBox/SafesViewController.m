@@ -61,6 +61,10 @@
     [self refreshView];
 }
 
+- (void)didBecomeActive:(NSNotification *)notification {
+    [self checkICloudAvailability];
+}
+
 - (void)refreshView {
     self.collection = SafesCollection.sharedInstance.sortedSafes;
     [self.tableView reloadData];
@@ -98,6 +102,13 @@
     else {
         [self showStartupMessaging];
     }
+    
+    // Add to the bottom of viewDidLoad
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+}
+
+- (BOOL)hasSafesOtherThanLocalAndiCloud {
+    return SafesCollection.sharedInstance.sortedSafes.count - ([self getICloudSafes].count + [self getLocalDeviceSafes].count) > 0;
 }
 
 - (NSArray<SafeMetaData*>*)getLocalDeviceSafes {
@@ -141,19 +152,27 @@
             [Settings sharedInstance].iCloudWasOn = NO;
         }
         else {
-            // Ask user if want to turn on iCloud if it's available and we haven't asked already
-            if (![Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudPrompted) {
+            // Ask user if want to turn on iCloud if it's available and we haven't asked already and we're not already presenting a view controller
+            if (![Settings sharedInstance].iCloudOn && ![Settings sharedInstance].iCloudPrompted && self.presentedViewController == nil) {
                 [Settings sharedInstance].iCloudPrompted = YES;
                 
-                [Alerts yesNo:self
-                        title:@"iCloud is Available"
-                      message:@"Automatically store your local documents in the cloud to keep them up-to-date across all your devices?"
-                       action:^(BOOL response) {
-                           if(response) {
-                               [Settings sharedInstance].iCloudOn = YES;
-                           }
-                           [self continueICloudAvailableProcedure];
-                       }];
+                BOOL existingLocalDeviceSafes = [self getLocalDeviceSafes].count > 0;
+                BOOL hasOtherCloudSafes = [self hasSafesOtherThanLocalAndiCloud];
+                
+                NSString *message = existingLocalDeviceSafes ?
+                    (hasOtherCloudSafes ? @"Should your current local safes be migrated to iCloud and available on all your devices? (NB: Your existing cloud safes will not be affected)" :
+                                          @"Should your current local safes be migrated to iCloud and available on all your devices?") :
+                    (hasOtherCloudSafes ? @"Would you like the option to use iCloud with Strongbox? (NB: Your existing cloud safes will not be affected)" : @"Would you like to use iCloud in Strongbox?");
+                
+                [Alerts twoOptions:self
+                             title:@"iCloud is Available"
+                           message:message
+                 defaultButtonText:@"Use iCloud" secondButtonText:@"Local Only" action:^(BOOL response) {
+                     if(response) {
+                         [Settings sharedInstance].iCloudOn = YES;
+                     }
+                     [self continueICloudAvailableProcedure];
+                 }];
             }
             else {
                 [self continueICloudAvailableProcedure];
@@ -239,13 +258,17 @@
         date = [cal dateByAddingUnit:NSCalendarUnitDay value:7 toDate:[NSDate date] options:0];
         
         [Alerts info:self title:@"Upgrade Possibilites"
-             message:@"Hi there, it looks like you've been using Strongbox for a while now. I have decided to move to a freemium business model to cover costs and support further development. From now, you will have a further week to evaluate the fully featured Strongbox. After this point, you will be transitioned to a more limited Lite version. You can find out more by pressing the Upgrade button below.\n-Mark\n\n* NB: You will not lose access to any existing safes." completion:nil];
+             message:@"Hi there, it looks like you've been using Strongbox for a while now. I have decided to move to a freemium business model to cover costs and support further development. From now, you will have a further week to evaluate the fully featured Strongbox. After this point, you will be transitioned to a more limited Lite version. You can find out more by pressing the Upgrade button below.\n-Mark\n\n* NB: You will not lose access to any existing safes." completion:^{
+                 [self checkICloudAvailability];
+             }];
     }
     else {
         date = [cal dateByAddingUnit:NSCalendarUnitMonth value:2 toDate:[NSDate date] options:0];
         
         [Alerts info:self title:@"Upgrade Possibilites"
-             message:@"Hi there, Welcome to Strongbox!\nYou will be able to use the fully featured app for two months. At that point you will be transitioned to a more limited version. To find out more you can tap the Upgrade button at anytime below. I hope you will enjoy the app, and choose to support it!\n-Mark" completion:nil];
+             message:@"Hi there, Welcome to Strongbox!\nYou will be able to use the fully featured app for two months. At that point you will be transitioned to a more limited version. To find out more you can tap the Upgrade button at anytime below. I hope you will enjoy the app, and choose to support it!\n-Mark" completion:^{
+                 [self checkICloudAvailability];
+             }];
     }
     
     [[Settings sharedInstance] setEndFreeTrialDate:date];
