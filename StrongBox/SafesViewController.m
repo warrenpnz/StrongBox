@@ -893,7 +893,16 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
 }
 
 - (void)addImportedSafe:(NSString *)nickName data:(NSData *)data {
-    [[LocalDeviceStorageProvider sharedInstance] create:nickName
+    id<SafeStorageProvider> provider;
+    
+    if(Settings.sharedInstance.iCloudOn) {
+        provider = AppleICloudProvider.sharedInstance;
+    }
+    else {
+        provider = LocalDeviceStorageProvider.sharedInstance;
+    }
+    
+    [provider create:nickName
               data:data
       parentFolder:nil
     viewController:self
@@ -902,8 +911,7 @@ askAboutTouchIdEnrol:(BOOL)askAboutTouchIdEnrol {
          dispatch_async(dispatch_get_main_queue(), ^(void)
                         {
                             if (error == nil) {
-                                [[SafesCollection sharedInstance]
-                                 add:metadata];
+                                [[SafesCollection sharedInstance] add:metadata];
                                 [self refreshView];
                             }
                             else {
